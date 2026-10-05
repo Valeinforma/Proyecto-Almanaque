@@ -1,0 +1,251 @@
+ROOM MAP — TECHFIX MANAGER
+Mapa de pantallas y navegación
+Versión: 1.0
+Fecha: 24/09/2026
+
+1. MAPA GENERAL
+
+                         ┌───────────────┐
+                         │     LOGIN     │
+                         │    /login     │
+                         └───────┬───────┘
+                                 │
+                                 ▼
+                       ┌───────────────────┐
+                       │     DASHBOARD     │
+                       │    /dashboard     │
+                       └─────────┬─────────┘
+                                 │
+        ┌────────────────────────┼─────────────────────────┐
+        │                        │                         │
+        ▼                        ▼                         ▼
+ ┌─────────────┐         ┌─────────────┐          ┌─────────────┐
+ │  CLIENTES   │         │   EQUIPOS   │          │   ÓRDENES   │
+ │ /clientes   │         │ /equipos    │          │ /ordenes    │
+ └──────┬──────┘         └──────┬──────┘          └──────┬──────┘
+        │                        │                         │
+        ├── Nuevo                ├── Nuevo                 ├── Nueva
+        ├── Editar               ├── Editar                ├── Editar
+        ├── Eliminar             ├── Eliminar              ├── Detalle
+        └── Ver detalle          └── Ver detalle            └── Estado
+                                                            │
+                                                            ▼
+                                                     ┌──────────────┐
+                                                     │ FLUJO ORDEN  │
+                                                     └──────┬───────┘
+                                                            │
+                         ┌──────────────────────────────────┼──────────────┐
+                         ▼                                  ▼              ▼
+                     Diagnóstico                       Presupuesto      Reparación
+                         │                                  │              │
+                         └──────────────────────────────────┼──────────────┘
+                                                            ▼
+                                                          LISTO
+                                                            │
+                                                            ▼
+                                                        ENTREGADO
+
+
+        ┌──────────────────────┐              ┌──────────────────────┐
+        │      SERVICIOS      │              │      REPUESTOS       │
+        │     /servicios      │              │     /repuestos       │
+        └──────────┬───────────┘              └──────────┬───────────┘
+                   │                                     │
+             CRUD completo                         CRUD completo
+
+
+                         ┌──────────────────────┐
+                         │       USUARIOS       │
+                         │      /usuarios       │
+                         └──────────┬───────────┘
+                                    │
+                              CRUD de usuarios
+
+
+2. RUTAS
+
+/                       Redirección según sesión
+/login                  Inicio de sesión
+/dashboard              Panel principal
+
+/clientes               Listado de clientes
+/clientes/nuevo         Crear cliente
+
+/equipos                Listado de equipos
+/equipos/nuevo          Crear equipo
+
+/ordenes                Listado de órdenes
+/ordenes/nueva          Crear orden
+/ordenes/[id]           Detalle de orden
+/ordenes/[id]/editar    Editar orden
+
+/servicios              CRUD de servicios
+/repuestos              CRUD de repuestos
+/usuarios               Administración de usuarios
+
+3. NAVEGACIÓN LATERAL
+
+TECHFIX
+
+◉ Dashboard
+
+GESTIÓN
+▣ Órdenes
+👥 Clientes
+💻 Equipos
+
+CATÁLOGO
+🔧 Servicios
+📦 Repuestos
+
+SISTEMA
+👤 Usuarios
+⚙ Configuración
+
+Salir
+
+4. ROOM: LOGIN
+
+Ruta: /login
+
+Elementos:
+- Logo
+- Email
+- Contraseña
+- Mostrar/ocultar contraseña
+- Botón ingresar
+- Mensaje de error
+
+Acción:
+Login exitoso -> /dashboard
+
+5. ROOM: DASHBOARD
+
+Ruta: /dashboard
+
+Elementos:
+- Saludo
+- Estadísticas
+- Órdenes recientes
+- Equipos listos
+- Actividad reciente
+
+6. ROOM: CLIENTES
+
+Ruta: /clientes
+
+Acciones:
+- Buscar
+- Crear
+- Editar
+- Eliminar
+- Ver equipos
+
+7. ROOM: EQUIPOS
+
+Ruta: /equipos
+
+Acciones:
+- Buscar
+- Crear
+- Editar
+- Eliminar
+- Ver orden relacionada
+
+8. ROOM: ORDEN
+
+Ruta: /ordenes/[id]
+
+Contenido:
+
+ORDEN #000142
+Cliente
+Equipo
+Problema reportado
+Diagnóstico
+Solución
+Servicios
+Repuestos
+Costo
+
+Timeline:
+
+Recibido
+   ↓
+Diagnóstico
+   ↓
+Presupuesto
+   ↓
+Reparación
+   ↓
+Listo
+   ↓
+Entregado
+
+9. ROOM: SERVICIOS
+
+CRUD:
+- Crear
+- Ver
+- Editar
+- Eliminar
+
+10. ROOM: REPUESTOS
+
+CRUD:
+- Crear
+- Ver
+- Editar
+- Eliminar
+- Control de stock
+
+11. ROOM: USUARIOS
+
+CRUD:
+- Crear usuario
+- Editar usuario
+- Activar/desactivar
+- Cambiar rol
+- Eliminar
+
+12. ROLES
+
+ADMIN:
+- Acceso completo
+
+TECNICO:
+- Clientes
+- Equipos
+- Órdenes
+- Servicios
+- Repuestos
+
+RECEPCION:
+- Clientes
+- Equipos
+- Órdenes
+- Consulta de servicios
+
+13. FLUJO DE USUARIO
+
+Usuario abre aplicación
+       ↓
+¿Tiene sesión?
+   ↓           ↓
+  NO          SÍ
+   ↓           ↓
+ /login    /dashboard
+               ↓
+        Selecciona módulo
+               ↓
+          CRUD / gestión
+               ↓
+        API .NET 10
+               ↓
+          PostgreSQL
+
+14. OBJETIVO DEL ROOM MAP
+
+El mapa busca que cada funcionalidad tenga una ubicación clara y que el usuario pueda entender rápidamente dónde realizar cada tarea.
+
+La navegación debe mantenerse simple, sin exceso de pantallas ni menús.

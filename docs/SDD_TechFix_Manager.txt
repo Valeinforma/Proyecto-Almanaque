@@ -1,0 +1,240 @@
+SDD — TECHFIX MANAGER
+Software Design Document
+Versión: 1.0
+Fecha: 24/09/2026
+
+1. DESCRIPCIÓN
+
+TechFix Manager es una aplicación web para una empresa de servicios técnicos. El sistema centraliza clientes, equipos y órdenes de reparación.
+
+El usuario inicia sesión y luego accede al panel principal.
+
+2. FLUJO PRINCIPAL
+
+Login
+  |
+  v
+Dashboard
+  |
+  +--> Clientes
+  |      |
+  |      +--> Crear
+  |      +--> Editar
+  |      +--> Eliminar
+  |
+  +--> Equipos
+  |      |
+  |      +--> Crear
+  |      +--> Editar
+  |      +--> Eliminar
+  |
+  +--> Órdenes
+  |      |
+  |      +--> Crear
+  |      +--> Diagnosticar
+  |      +--> Presupuestar
+  |      +--> Reparar
+  |      +--> Marcar como listo
+  |      +--> Entregar
+  |
+  +--> Servicios
+  |
+  +--> Repuestos
+  |
+  +--> Usuarios
+
+3. DISEÑO DEL FRONTEND
+
+frontend/
+├── app/
+│   ├── page.tsx
+│   ├── login/
+│   │   └── page.tsx
+│   ├── dashboard/
+│   │   └── page.tsx
+│   ├── clientes/
+│   │   ├── page.tsx
+│   │   └── nuevo/page.tsx
+│   ├── equipos/
+│   │   └── page.tsx
+│   ├── ordenes/
+│   │   ├── page.tsx
+│   │   ├── nueva/page.tsx
+│   │   └── [id]/page.tsx
+│   ├── servicios/
+│   │   └── page.tsx
+│   ├── repuestos/
+│   │   └── page.tsx
+│   └── usuarios/
+│       └── page.tsx
+├── components/
+│   ├── Sidebar.tsx
+│   ├── Header.tsx
+│   ├── StatCard.tsx
+│   ├── OrdenCard.tsx
+│   ├── Modal.tsx
+│   └── forms/
+├── lib/
+│   ├── api.ts
+│   └── auth.ts
+├── types/
+│   └── index.ts
+└── public/
+
+4. INTERFAZ
+
+La interfaz no utilizará el diseño CRUD genérico de tablas azules.
+
+Concepto visual:
+"Workshop tecnológico moderno"
+
+Paleta:
+- Fondo: #0B1120
+- Panel: #111827
+- Panel secundario: #172033
+- Texto: #F8FAFC
+- Texto secundario: #94A3B8
+- Principal: #38BDF8
+- Éxito: #34D399
+- Advertencia: #FBBF24
+- Error: #FB7185
+
+5. LOGIN
+
+Pantalla dividida:
+
+Lado izquierdo:
+- Marca TechFix
+- Ilustración/elementos tecnológicos
+- Frase: "Organizá cada reparación desde un solo lugar."
+
+Lado derecho:
+- Email
+- Contraseña
+- Botón "Ingresar"
+- Mensaje de error si las credenciales son incorrectas
+
+6. DASHBOARD
+
+Mostrar:
+- Órdenes abiertas
+- En diagnóstico
+- En reparación
+- Listas para entregar
+- Ingresos estimados
+- Órdenes recientes
+
+7. CLIENTES
+
+La pantalla tendrá:
+- Buscador
+- Botón Nuevo cliente
+- Lista/tarjetas de clientes
+- Editar
+- Eliminar
+- Ver equipos asociados
+
+8. EQUIPOS
+
+Cada equipo mostrará:
+- Tipo
+- Marca
+- Modelo
+- Número de serie
+- Cliente
+- Problema informado
+- Estado de la orden relacionada
+
+9. ÓRDENES
+
+Las órdenes serán el núcleo del sistema.
+
+Cada orden mostrará:
+- Número
+- Cliente
+- Equipo
+- Fecha de ingreso
+- Problema
+- Diagnóstico
+- Solución
+- Costo
+- Estado
+
+El estado se mostrará mediante una línea de progreso:
+
+Recibido -> Diagnóstico -> Presupuesto -> Reparación -> Listo -> Entregado
+
+10. API EN NEXT.JS
+
+lib/api.ts será responsable de centralizar las solicitudes.
+
+Ejemplo conceptual:
+
+api.get("/clientes")
+api.post("/clientes", data)
+api.put("/clientes/1", data)
+api.delete("/clientes/1")
+
+En las solicitudes protegidas se enviará el header X-Usuario-Id con el id del usuario.
+
+11. MANEJO DE SESIÓN
+
+Al iniciar sesión:
+- Backend valida las credenciales y devuelve { id, nombre, email, rol }.
+- Frontend conserva el usuario en la sesión (localStorage).
+- Las peticiones protegidas llevan el header X-Usuario-Id.
+- Si no hay usuario o el id es inválido, se redirige a /login.
+
+12. COMPONENTES REUTILIZABLES
+
+- Button
+- Input
+- Select
+- Modal
+- Table/Card
+- Badge
+- StatCard
+- StatusBadge
+- Sidebar
+- Header
+
+13. PRINCIPIO DE DISEÑO
+
+El sistema debe ser visualmente moderno pero técnicamente sencillo.
+
+Cada componente debe tener una responsabilidad clara.
+
+14. RESPONSIVE
+
+El sistema debe funcionar en:
+- Desktop
+- Notebook
+- Tablet
+
+En pantallas pequeñas, el sidebar se transforma en navegación compacta.
+
+15. EXPERIENCIA DE USUARIO
+
+Acciones destructivas deben solicitar confirmación.
+
+Ejemplo:
+"¿Eliminar cliente Juan Pérez?"
+
+Los cambios exitosos mostrarán una notificación.
+
+Los errores mostrarán un mensaje claro.
+
+16. ESCALABILIDAD
+
+La primera versión será monolítica:
+
+Next.js + API .NET + PostgreSQL.
+
+La estructura permitirá posteriormente agregar:
+- notificaciones
+- PDF
+- fotografías
+- código QR
+- estadísticas
+- historial de estados
+- integración con email

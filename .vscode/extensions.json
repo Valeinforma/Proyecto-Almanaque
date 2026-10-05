@@ -1,0 +1,30 @@
+{
+  "recommendations": [
+    "EditorConfig.EditorConfig",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "SonarSource.sonarlint-vscode",
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-containers",
+    "ms-azuretools.vscode-docker",
+    "42Crunch.vscode-openapi",
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "formulahendry.dotnet-test-explorer",
+    "ryanluker.vscode-coverage-gutters",
+    "hbenl.vscode-test-explorer",
+    "ms-vscode.test-adapter-converter",
+    "openai.chatgpt",
+    "github.copilot",
+    "github.copilot-chat",
+    "ms-vscode.powershell",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "streetsidesoftware.code-spell-checker",
+    "csharpier.csharpier-vscode",
+    "dotjoshjohnson.xml",
+    "ms-mssql.mssql"
+  ],
+  "unwantedRecommendations": []
+}

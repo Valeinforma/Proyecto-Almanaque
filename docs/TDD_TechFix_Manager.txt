@@ -1,0 +1,233 @@
+TDD — TECHFIX MANAGER
+Technical Design Document
+Versión: 1.0
+Fecha: 24/09/2026
+
+1. OBJETIVO
+TechFix Manager es un sistema web para gestionar una empresa de servicios técnicos. Permitirá administrar clientes, equipos, órdenes de servicio, servicios, repuestos y usuarios.
+
+El sistema tendrá autenticación mediante usuario y contraseña. Los usuarios deberán iniciar sesión para acceder al sistema.
+
+2. STACK TECNOLÓGICO
+
+Backend:
+- .NET 10
+- C#
+- ASP.NET Core Web API
+- Entity Framework Core
+- PostgreSQL
+- BCrypt/PasswordHasher para contraseñas
+- Swagger / OpenAPI
+
+Frontend:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Lucide React
+
+3. ARQUITECTURA
+
+Usuario
+  |
+  v
+Next.js
+  |
+  | HTTP + JSON + header X-Usuario-Id
+  v
+ASP.NET Core .NET 10
+  |
+  v
+Entity Framework Core
+  |
+  v
+PostgreSQL
+
+4. MÓDULOS
+
+- Autenticación
+- Dashboard
+- Clientes
+- Equipos
+- Órdenes de servicio
+- Servicios
+- Repuestos
+- Usuarios
+- Perfil/sesión
+
+5. AUTENTICACIÓN
+
+El usuario ingresa:
+- Email
+- Contraseña
+
+El frontend envía las credenciales a:
+POST /api/auth/login
+
+El backend valida las credenciales (hash BCrypt) y devuelve los datos del usuario:
+- Id
+- Nombre
+- Email
+- Rol
+
+No se emite ningún token.
+
+Para las peticiones protegidas, el frontend envía el header:
+X-Usuario-Id: {id}
+
+El backend carga el usuario desde la base de datos, verifica que esté activo y aplica su rol.
+
+Endpoints públicos:
+- POST /api/auth/login
+
+Endpoints protegidos (requieren header X-Usuario-Id de un usuario activo):
+- Clientes
+- Equipos
+- Órdenes
+- Servicios
+- Repuestos
+- Usuarios
+- Dashboard
+
+6. ENTIDADES
+
+Usuario:
+- Id
+- Nombre
+- Email
+- PasswordHash
+- Rol
+- Activo
+
+Cliente:
+- Id
+- Nombre
+- Apellido
+- Telefono
+- Email
+- Direccion
+- FechaAlta
+
+Equipo:
+- Id
+- ClienteId
+- Tipo
+- Marca
+- Modelo
+- NumeroSerie
+- Descripcion
+
+OrdenServicio:
+- Id
+- NumeroOrden
+- EquipoId
+- UsuarioId
+- FechaIngreso
+- FechaEstimada
+- ProblemaReportado
+- Diagnostico
+- Solucion
+- Estado
+- Costo
+- Observaciones
+- FechaEntrega
+
+Servicio:
+- Id
+- Nombre
+- Descripcion
+- Precio
+- Activo
+
+Repuesto:
+- Id
+- Nombre
+- Descripcion
+- Precio
+- Stock
+- Activo
+
+7. ESTADOS DE ORDEN
+
+- Recibido
+- EnDiagnostico
+- Presupuestado
+- EnReparacion
+- Listo
+- Entregado
+- Cancelado
+
+8. API
+
+Auth:
+POST /api/auth/login
+GET /api/auth/me
+(requiere header X-Usuario-Id)
+
+Clientes:
+GET /api/clientes
+GET /api/clientes/{id}
+POST /api/clientes
+PUT /api/clientes/{id}
+DELETE /api/clientes/{id}
+
+Equipos:
+GET /api/equipos
+GET /api/equipos/{id}
+POST /api/equipos
+PUT /api/equipos/{id}
+DELETE /api/equipos/{id}
+
+Ordenes:
+GET /api/ordenes
+GET /api/ordenes/{id}
+POST /api/ordenes
+PUT /api/ordenes/{id}
+DELETE /api/ordenes/{id}
+
+Servicios:
+GET /api/servicios
+POST /api/servicios
+PUT /api/servicios/{id}
+DELETE /api/servicios/{id}
+
+Repuestos:
+GET /api/repuestos
+POST /api/repuestos
+PUT /api/repuestos/{id}
+DELETE /api/repuestos/{id}
+
+Usuarios:
+GET /api/usuarios
+POST /api/usuarios
+PUT /api/usuarios/{id}
+DELETE /api/usuarios/{id}
+
+9. ESTRUCTURA BACKEND
+
+Backend/
+├── Controllers/
+├── Data/
+├── Models/
+├── DTOs/
+├── Services/
+├── Migrations/
+├── Program.cs
+└── appsettings.json
+
+Services:
+- AuthService
+- HeaderAuthenticationHandler
+
+10. SEGURIDAD
+
+- Contraseñas almacenadas como hash (BCrypt).
+- Autenticación mediante header X-Usuario-Id (sin token).
+- El rol se toma de la base de datos, nunca del header.
+- Validación de DTOs.
+- CORS configurado para el frontend.
+- Variables sensibles mediante configuración/variables de entorno.
+
+11. OBJETIVO DE DESARROLLO
+
+La aplicación debe ser sencilla de explicar y mantener. No se utilizarán microservicios, CQRS, RabbitMQ ni una Clean Architecture excesivamente compleja en la primera versión.
