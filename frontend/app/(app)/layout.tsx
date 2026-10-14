@@ -20,8 +20,8 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSesion, obtenerSesion } from '@/lib/auth';
-import Sidebar from '@/components/Sidebar';
-import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar/Sidebar';
+import Header from '@/components/Header/Header';
 
 // El route group (app) no aparece en las rutas generadas por
 // Next, así que no podemos usar LayoutProps<'/(app)'>: declaramos

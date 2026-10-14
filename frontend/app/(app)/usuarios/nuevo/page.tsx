@@ -6,20 +6,23 @@
 // ------------------------------------------------------------
 // Patrón "crear = página". El form valida en cliente; los
 // errores del backend (email duplicado 409, rol inválido 400)
-// aparecen dentro del propio form.
+// aparecen dentro del propio form. El alta sale por
+// useUsuariosApi().agregarUsuario.
 // ============================================================
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import UsuarioForm from '@/components/forms/UsuarioForm';
-import { api } from '@/lib/api';
-import type { Usuario, UsuarioInput } from '@/types';
+import UsuarioForm from '@/components/UsuarioForm/UsuarioForm';
+import useUsuariosApi from '@/hooks/useUsuariosApi';
+import type { IUsuarioInput } from '@/interfaces/IUsuario';
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
 
-  async function crear(datos: UsuarioInput) {
-    await api.post<Usuario>('/usuarios', datos);
+  const { agregarUsuario } = useUsuariosApi({ autoCargar: false });
+
+  async function crear(datos: IUsuarioInput) {
+    await agregarUsuario(datos);
     router.push('/usuarios');
   }
 

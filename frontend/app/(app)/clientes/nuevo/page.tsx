@@ -6,7 +6,8 @@
 // ------------------------------------------------------------
 // Usa el MISMO ClienteForm que el modal de edición — la única
 // diferencia es qué hace con los datos:
-//   acá → POST y volvemos al listado.
+//   acá → alta vía useClientesApi().agregarCliente y volvemos
+//   al listado (que recargará los datos).
 //
 // Página en vez de modal (a diferencia de editar) porque crear
 // es una "tarea con foco": formulario completo + botón volver.
@@ -14,16 +15,20 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import ClienteForm from '@/components/forms/ClienteForm';
-import { api } from '@/lib/api';
-import type { Cliente, ClienteInput } from '@/types';
+import ClienteForm from '@/components/ClienteForm/ClienteForm';
+import useClientesApi from '@/hooks/useClientesApi';
+import type { IClienteInput } from '@/interfaces/ICliente';
 
 export default function NuevoClientePage() {
   const router = useRouter();
 
-  async function crear(datos: ClienteInput) {
-    // POST → la API responde 201 con el cliente creado.
-    await api.post<Cliente>('/clientes', datos);
+  // No necesitamos el listado, solo la operación de alta.
+  const { agregarCliente } = useClientesApi({ autoCargar: false });
+
+  async function crear(datos: IClienteInput) {
+    // POST → la API responde 201 con el cliente creado (el
+    // form captura cualquier error del backend).
+    await agregarCliente(datos);
     // Listo: volvemos al listado (que ya recargará los datos).
     router.push('/clientes');
   }

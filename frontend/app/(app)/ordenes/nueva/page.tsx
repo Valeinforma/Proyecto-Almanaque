@@ -5,38 +5,57 @@
 // (ROOM_MAP §2: /ordenes/nueva)
 // ------------------------------------------------------------
 // Flujo: elegir CLIENTE → sus EQUIPOS (en cascada) → describir
-// el problema → crear (POST /api/ordenes).
+// el problema → crear (useOrdenesApi().agregarOrden).
 //
 // El backend exige `usuarioId` = técnico responsable:
 //  • por defecto: el usuario EN SESIÓN (siempre existe).
 //  • si sos Admin: podés elegir otro técnico (GET /usuarios
-//    es Admin-only — por eso nadie más carga esa lista).
+//    es Admin-only — por eso solo Admin carga esa lista con
+//    obtenerUsuarios()).
 //
 // Los DETALLES (servicios/repuestos) no se cargan acá: se
 // agregan desde el detalle de la orden, donde se controla
 // el stock repuesto por repuesto.
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
-import TextArea from '@/components/ui/TextArea';
-import { api } from '@/lib/api';
+import Button from '@/components/Button/Button';
+import Input from '@/components/Input/Input';
+import Select from '@/components/Select/Select';
+import TextArea from '@/components/TextArea/TextArea';
+import useClientesApi from '@/hooks/useClientesApi';
+import useEquiposApi from '@/hooks/useEquiposApi';
+import useUsuariosApi from '@/hooks/useUsuariosApi';
+import useOrdenesApi from '@/hooks/useOrdenesApi';
 import { useSesion } from '@/lib/auth';
-import type { Cliente, Equipo, Orden, OrdenInput, Usuario } from '@/types';
+import type { IOrdenInput } from '@/interfaces/IOrden';
 
 export default function NuevaOrdenPage() {
   const router = useRouter();
   const sesion = useSesion();
 
-  // ---------- datos de apoyo ----------
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [tecnicos, setTecnicos] = useState<Usuario[]>([]);
-  const [errorCarga, setErrorCarga] = useState<string | null>(null);
+  // ---------- datos de apoyo (auto-cargados) ----------
+  const {
+    clientes,
+    cargando: cargandoClientes,
+    error: errorClientes,
+  } = useClientesApi();
+  const {
+    equipos,
+    cargando: cargandoEquipos,
+    error: errorEquipos,
+  } = useEquiposApi();
+  // Técnicos: solo Admin puede pedir /usuarios → lo cargamos a
+  // demanda (autoCargar: false) en el effect de abajo.
+  const { usuarios: usuariosTodos, obtenerUsuarios } = useUsuariosApi({
+    autoCargar: false,
+  });
+  // Alta de orden: sin listado propio.
+  const { agregarOrden } = useOrdenesApi({ autoCargar: false });
+
+  const tecnicos = usuariosTodos.filter((u) => u.activo);
 
   // ---------- campos del formulario ----------
   const [clienteId, setClienteId] = useState('');
@@ -49,31 +68,25 @@ export default function NuevaOrdenPage() {
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [errorBackend, setErrorBackend] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [cargando, setCargando] = useState(true);
 
-  // Cargamos clientes + equipos (y técnicos solo si es Admin).
-  // Tercer promise condicional: resuelve null si no es Admin.
+  // Técnicos solo si es Admin (el GET es Admin-only).
   useEffect(() => {
-    Promise.all([
-      api.get<Cliente[]>('/clientes'),
-      api.get<Equipo[]>('/equipos'),
-      sesion?.rol === 'Admin'
-        ? api.get<Usuario[]>('/usuarios')
-        : Promise.resolve<Usuario[] | null>(null),
-    ])
-      .then(([listaClientes, listaEquipos, listaUsuarios]) => {
-        setClientes(listaClientes);
-        setEquipos(listaEquipos);
-        if (listaUsuarios) setTecnicos(listaUsuarios.filter((u) => u.activo));
-        // Responsable por defecto: yo (la sesión).
-        if (sesion) setUsuarioId(String(sesion.id));
-        setCargando(false);
-      })
-      .catch((e: unknown) => {
-        setErrorCarga(e instanceof Error ? e.message : 'Error desconocido');
-        setCargando(false);
-      });
-  }, [sesion]);
+    if (sesion?.rol === 'Admin') obtenerUsuarios();
+  }, [sesion, obtenerUsuarios]);
+
+  // Responsable por defecto: yo (la sesión). Patrón "adjust state
+  // during render" (permitido) en vez de setState dentro del effect
+  // — react-hooks/set-state-in-effect lo rechazaría.
+  const [sesionPrevia, setSesionPrevia] = useState(sesion);
+  if (sesionPrevia !== sesion) {
+    setSesionPrevia(sesion);
+    if (sesion) setUsuarioId(String(sesion.id));
+  }
+
+  // Combinados de las dos listas auto-cargadas (mismo UX que el
+  // Promise.all original).
+  const cargando = cargandoClientes || cargandoEquipos;
+  const errorCarga = errorClientes ?? errorEquipos;
 
   // Cascada: al cambiar de cliente, el equipo vuelve a vacío.
   // (setState en handler de evento: permitido.)
@@ -86,7 +99,7 @@ export default function NuevaOrdenPage() {
     (eq) => eq.clienteId === Number(clienteId)
   );
 
-  const alEnviar = useCallback(async () => {
+  async function alEnviar() {
     if (enviando) return;
 
     if (!clienteId || !equipoId) {
@@ -102,7 +115,7 @@ export default function NuevaOrdenPage() {
     setErrorBackend(null);
     setEnviando(true);
 
-    const datos: OrdenInput = {
+    const datos: IOrdenInput = {
       equipoId: Number(equipoId),
       usuarioId: Number(usuarioId),
       problemaReportado: problema.trim() || null,
@@ -111,13 +124,13 @@ export default function NuevaOrdenPage() {
     };
 
     try {
-      await api.post<Orden>('/ordenes', datos);
+      await agregarOrden(datos);
       router.push('/ordenes');
     } catch (err) {
       setErrorBackend(err instanceof Error ? err.message : 'Error al crear');
       setEnviando(false);
     }
-  }, [enviando, clienteId, equipoId, usuarioId, problema, fechaEstimada, observaciones, router]);
+  }
 
   if (errorCarga) {
     return (
@@ -181,7 +194,8 @@ export default function NuevaOrdenPage() {
                 disabled={!clienteId || enviando}
                 opciones={equiposDelCliente.map((eq) => ({
                   valor: eq.id,
-                  texto: [eq.tipo, eq.marca, eq.modelo].filter(Boolean).join(' ') ||
+                  texto:
+                    [eq.tipo, eq.marca, eq.modelo].filter(Boolean).join(' ') ||
                     `Equipo #${eq.id}`,
                 }))}
               />

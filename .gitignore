@@ -26,3 +26,6 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 .vs/*
+
+# Artefactos de pruebas en navegador (Playwright MCP)
+.playwright-mcp/

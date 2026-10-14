@@ -4,22 +4,24 @@
 // app/(app)/servicios/nuevo/page.tsx — CREAR SERVICIO
 // (ROOM_MAP §2: /servicios/nuevo)
 // ------------------------------------------------------------
-// El patrón "crear = página" de la Parte 3. Como GET /servicios
-// es de solo lectura para todos, esta ruta no pide datos
-// extra: el form solo necesita el callback de POST.
+// El patrón "crear = página". Como el form solo necesita el
+// callback de alta, usamos useServiciosApi sin cargar el
+// listado (autoCargar: false).
 // ============================================================
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import ServicioForm from '@/components/forms/ServicioForm';
-import { api } from '@/lib/api';
-import type { Servicio, ServicioInput } from '@/types';
+import ServicioForm from '@/components/ServicioForm/ServicioForm';
+import useServiciosApi from '@/hooks/useServiciosApi';
+import type { IServicioInput } from '@/interfaces/IServicio';
 
 export default function NuevoServicioPage() {
   const router = useRouter();
 
-  async function crear(datos: ServicioInput) {
-    await api.post<Servicio>('/servicios', datos);
+  const { agregarServicio } = useServiciosApi({ autoCargar: false });
+
+  async function crear(datos: IServicioInput) {
+    await agregarServicio(datos);
     router.push('/servicios');
   }
 

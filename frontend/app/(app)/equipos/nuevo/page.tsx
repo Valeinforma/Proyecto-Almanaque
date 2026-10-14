@@ -4,36 +4,29 @@
 // app/(app)/equipos/nuevo/page.tsx — CREAR EQUIPO
 // (ROOM_MAP §2: /equipos/nuevo)
 // ------------------------------------------------------------
-// Igual que /clientes/nuevo: cargamos los datos que necesita el
-// form (la lista de clientes para el select), creamos con POST y
+// Igual que /clientes/nuevo: el form necesita la lista de
+// clientes para el select (useClientesApi la trae sola) y el
+// alta sale por useEquiposApi().agregarEquipo; después
 // volvemos al listado.
 // ============================================================
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import EquipoForm from '@/components/forms/EquipoForm';
-import { api } from '@/lib/api';
-import type { Cliente, Equipo, EquipoInput } from '@/types';
+import EquipoForm from '@/components/EquipoForm/EquipoForm';
+import useClientesApi from '@/hooks/useClientesApi';
+import useEquiposApi from '@/hooks/useEquiposApi';
+import type { IEquipoInput } from '@/interfaces/IEquipo';
 
 export default function NuevoEquipoPage() {
   const router = useRouter();
 
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // Select de clientes: lista auto-cargada.
+  const { clientes, error } = useClientesApi();
+  // Alta de equipo: sin listado propio.
+  const { agregarEquipo } = useEquiposApi({ autoCargar: false });
 
-  // El form necesita el select de clientes: lo cargamos acá.
-  useEffect(() => {
-    api
-      .get<Cliente[]>('/clientes')
-      .then(setClientes)
-      .catch((e: unknown) =>
-        setError(e instanceof Error ? e.message : 'Error desconocido')
-      );
-  }, []);
-
-  async function crear(datos: EquipoInput) {
-    await api.post<Equipo>('/equipos', datos);
+  async function crear(datos: IEquipoInput) {
+    await agregarEquipo(datos);
     router.push('/equipos');
   }
 

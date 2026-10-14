@@ -10,7 +10,7 @@
 //   4. se redirija a /login si la sesión ya no sirve
 //
 // Uso desde cualquier página/componente:
-//   await api.get<Cliente[]>('/clientes')
+//   await api.get<ICliente[]>('/clientes')
 //   await api.post('/clientes', datos)
 // ============================================================
 

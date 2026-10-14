@@ -21,12 +21,13 @@
 
 import { useSyncExternalStore } from 'react';
 import { api, guardarSesion, borrarSesion, CLAVE_SESION } from './api';
-import type { SesionUsuario, Rol } from '@/types';
+import type { ISesionUsuario } from '@/interfaces/IUsuario';
+import type { Rol } from '@/types/roles';
 
 // POST /api/auth/login
 // Lanza ApiError(401, 'Credenciales incorrectas') si falla.
-export async function iniciarSesion(email: string, password: string): Promise<SesionUsuario> {
-  const sesion = await api.post<SesionUsuario>('/auth/login', { email, password });
+export async function iniciarSesion(email: string, password: string): Promise<ISesionUsuario> {
+  const sesion = await api.post<ISesionUsuario>('/auth/login', { email, password });
 
   // Si el backend respondió sin id, algo anda mal → no guardamos nada.
   if (!sesion || typeof sesion.id !== 'number') {
@@ -50,9 +51,9 @@ export function cerrarSesion(): void {
 // que hay un cambio nuevo en cada render → loop infinito).
 // Por eso parseamos solo cuando el string de localStorage cambió.
 let crudoCache: string | null | undefined = undefined;
-let sesionCache: SesionUsuario | null = null;
+let sesionCache: ISesionUsuario | null = null;
 
-function leerSesion(): SesionUsuario | null {
+function leerSesion(): ISesionUsuario | null {
   if (typeof window === 'undefined') return null;
 
   const crudo = window.localStorage.getItem(CLAVE_SESION);
@@ -63,7 +64,7 @@ function leerSesion(): SesionUsuario | null {
 
     if (crudo) {
       try {
-        const datos = JSON.parse(crudo) as SesionUsuario;
+        const datos = JSON.parse(crudo) as ISesionUsuario;
         // Sanidad mínima: id + rol presentes.
         if (typeof datos.id === 'number' && typeof datos.rol === 'string') {
           sesionCache = datos;
@@ -81,7 +82,7 @@ function leerSesion(): SesionUsuario | null {
 // Devuelve la sesión guardada, o null si no hay / está rota.
 // (Versión imperativa: para usar fuera de React o en momentos
 // puntuales —ej: antes de un fetch—.)
-export function obtenerSesion(): SesionUsuario | null {
+export function obtenerSesion(): ISesionUsuario | null {
   return leerSesion();
 }
 
@@ -108,7 +109,7 @@ function suscribir(alCambiar: () => void): () => void {
 // Snapshot del servidor (SSR/prerender): no hay localStorage → null.
 // Esto hace que el HTML del servidor y la primera renderización del
 // navegador coincidan (sin "hydration mismatch").
-function sesionEnServidor(): SesionUsuario | null {
+function sesionEnServidor(): ISesionUsuario | null {
   return null;
 }
 
@@ -119,7 +120,7 @@ function sesionEnServidor(): SesionUsuario | null {
 // localStorage es una "fuente externa" a React. Esta API le dice
 // a React cómo leerla y suscribirse, resolviendo sola los problemas
 // de SSR y de sincronía (regla: nada de setState dentro de effects).
-export function useSesion(): SesionUsuario | null {
+export function useSesion(): ISesionUsuario | null {
   return useSyncExternalStore(suscribir, leerSesion, sesionEnServidor);
 }
 

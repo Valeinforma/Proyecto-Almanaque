@@ -20,8 +20,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Wrench, LogIn } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import Button from '@/components/Button/Button';
+import Input from '@/components/Input/Input';
 import { iniciarSesion, haySesion } from '@/lib/auth';
 
 export default function LoginPage() {

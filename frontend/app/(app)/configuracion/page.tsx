@@ -24,9 +24,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Building, KeyRound, Server, RefreshCw } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import { api, API_URL } from '@/lib/api';
+import Button from '@/components/Button/Button';
+import Input from '@/components/Input/Input';
+import useUsuariosApi from '@/hooks/useUsuariosApi';
+import { API_URL } from '@/lib/api';
 import { tieneRol, useSesion } from '@/lib/auth';
 import { CONFIG_VACIA, guardarConfigTaller, obtenerConfigTaller } from '@/lib/configuracion';
 import type { ConfigTaller } from '@/lib/configuracion';
@@ -37,6 +38,10 @@ type EstadoApi = 'probando' | 'ok' | 'error';
 export default function ConfiguracionPage() {
   const sesion = useSesion();
   const esAdmin = tieneRol('Admin');
+
+  // El PUT de contraseña va por el hook (sin cargar el listado):
+  // la página no necesita GET /usuarios.
+  const { editarUsuario } = useUsuariosApi({ autoCargar: false });
 
   // ========================================================
   // 1) Datos del taller (localStorage)
@@ -96,7 +101,7 @@ export default function ConfiguracionPage() {
       // los campos (tomamos nombre/email/rol de la sesión;
       // activo=true porque para iniciar sesión hay que estarlo).
       // El backend solo hashea `password` si viene no vacía.
-      await api.put(`/usuarios/${sesion.id}`, {
+      await editarUsuario(sesion.id, {
         nombre: sesion.nombre,
         email: sesion.email,
         rol: sesion.rol,

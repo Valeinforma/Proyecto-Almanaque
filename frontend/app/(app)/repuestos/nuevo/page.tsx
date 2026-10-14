@@ -11,15 +11,17 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import RepuestoForm from '@/components/forms/RepuestoForm';
-import { api } from '@/lib/api';
-import type { Repuesto, RepuestoInput } from '@/types';
+import RepuestoForm from '@/components/RepuestoForm/RepuestoForm';
+import useRepuestosApi from '@/hooks/useRepuestosApi';
+import type { IRepuestoInput } from '@/interfaces/IRepuesto';
 
 export default function NuevoRepuestoPage() {
   const router = useRouter();
 
-  async function crear(datos: RepuestoInput) {
-    await api.post<Repuesto>('/repuestos', datos);
+  const { agregarRepuesto } = useRepuestosApi({ autoCargar: false });
+
+  async function crear(datos: IRepuestoInput) {
+    await agregarRepuesto(datos);
     router.push('/repuestos');
   }
 
