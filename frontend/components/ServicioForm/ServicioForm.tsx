@@ -21,6 +21,9 @@ import { useState } from 'react';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
 import TextArea from '@/components/TextArea/TextArea';
+import CampoImagen from '@/components/CampoImagen/CampoImagen';
+import { subirImagen } from '@/lib/api';
+import { useSesion } from '@/lib/auth';
 import type { IServicio, IServicioInput } from '@/interfaces/IServicio';
 
 interface ServicioFormProps {
@@ -30,10 +33,20 @@ interface ServicioFormProps {
 }
 
 export default function ServicioForm({ inicial, onGuardar, onCancelar }: ServicioFormProps) {
+  const sesion = useSesion();
+  // Regla de negocio: las fotos de SERVICIOS las sube solo Admin.
+  // (Técnicos gestionan servicios, pero la foto de catálogo de
+  // servicios es exclusiva del administrador.)
+  const puedeSubirFoto = sesion?.rol === 'Admin';
+
   const [nombre, setNombre] = useState(inicial?.nombre ?? '');
   const [descripcion, setDescripcion] = useState(inicial?.descripcion ?? '');
   const [precio, setPrecio] = useState(inicial ? String(inicial.precio) : '');
   const [activo, setActivo] = useState(inicial?.activo ?? true);
+
+  // Foto: archivo nuevo pendiente de subir + URL ya guardada.
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [imagenUrl, setImagenUrl] = useState<string | null>(inicial?.imagenUrl ?? null);
 
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [errorBackend, setErrorBackend] = useState<string | null>(null);
@@ -58,11 +71,29 @@ export default function ServicioForm({ inicial, onGuardar, onCancelar }: Servici
     setErrorBackend(null);
     setEnviando(true);
 
+    // ---------- foto (solo Admin; subida previa al guardado) ----------
+    let urlFinal = inicial?.imagenUrl ?? null;
+    if (puedeSubirFoto) {
+      urlFinal = imagenUrl;
+      if (archivo) {
+        try {
+          urlFinal = await subirImagen('servicios', archivo);
+          setImagenUrl(urlFinal);
+          setArchivo(null);
+        } catch (err) {
+          setErrorBackend(err instanceof Error ? err.message : 'No se pudo subir la imagen');
+          setEnviando(false);
+          return;
+        }
+      }
+    }
+
     const datos: IServicioInput = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || null,
       precio: precioNum,
       activo,
+      imagenUrl: urlFinal,
     };
 
     try {
@@ -101,6 +132,18 @@ export default function ServicioForm({ inicial, onGuardar, onCancelar }: Servici
         step="0.01"
         disabled={enviando}
       />
+
+      {/* Foto de catálogo: visible solo para Admin (regla de rol). */}
+      {puedeSubirFoto && (
+        <CampoImagen
+          label="Foto del servicio"
+          archivo={archivo}
+          urlActual={imagenUrl}
+          onCambio={setArchivo}
+          onQuitarGuardada={() => setImagenUrl(null)}
+          disabled={enviando}
+        />
+      )}
 
       {/* Checkbox simple: estado del ítem en el catálogo */}
       <label className="flex cursor-pointer items-center gap-2 text-sm text-texto-2">

@@ -14,6 +14,10 @@ public record ServicioCreateDto
     public decimal Precio { get; init; }
 
     public bool Activo { get; init; } = true;
+
+    // URL devuelta por POST /api/archivo/imagen (null = sin foto).
+    [MaxLength(500)]
+    public string? ImagenUrl { get; init; }
 }
 
 public record ServicioUpdateDto
@@ -28,6 +32,9 @@ public record ServicioUpdateDto
     public decimal Precio { get; init; }
 
     public bool Activo { get; init; } = true;
+
+    [MaxLength(500)]
+    public string? ImagenUrl { get; init; }
 }
 
 public record RepuestoCreateDto
@@ -45,6 +52,10 @@ public record RepuestoCreateDto
     public int Stock { get; init; }
 
     public bool Activo { get; init; } = true;
+
+    // URL devuelta por POST /api/archivo/imagen (null = sin foto).
+    [MaxLength(500)]
+    public string? ImagenUrl { get; init; }
 }
 
 public record RepuestoUpdateDto
@@ -62,4 +73,7 @@ public record RepuestoUpdateDto
     public int Stock { get; init; }
 
     public bool Activo { get; init; } = true;
+
+    [MaxLength(500)]
+    public string? ImagenUrl { get; init; }
 }

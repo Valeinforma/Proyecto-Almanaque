@@ -1,6 +1,7 @@
 using Backend.Data;
 using Backend.Dtos;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace Backend.Controllers;
 [ApiController]
 [Route("api/repuestos")]
 [Authorize(Roles = "Admin,Tecnico")]
-public class RepuestosController(AppDbContext db) : ControllerBase
+public class RepuestosController(AppDbContext db, SupabaseStorageService storage) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] string? search, [FromQuery] bool? soloActivos)
@@ -52,7 +53,8 @@ public class RepuestosController(AppDbContext db) : ControllerBase
             Descripcion = request.Descripcion,
             Precio = request.Precio,
             Stock = request.Stock,
-            Activo = request.Activo
+            Activo = request.Activo,
+            ImagenUrl = request.ImagenUrl
         };
 
         db.Repuestos.Add(repuesto);
@@ -75,6 +77,13 @@ public class RepuestosController(AppDbContext db) : ControllerBase
         repuesto.Stock = request.Stock;
         repuesto.Activo = request.Activo;
 
+        // Si la foto cambió (o se quitó), borramos la vieja del
+        // bucket. Best-effort: no interrumpe la edición.
+        if (repuesto.ImagenUrl != request.ImagenUrl)
+            await storage.EliminarImagenAsync(repuesto.ImagenUrl);
+
+        repuesto.ImagenUrl = request.ImagenUrl;
+
         await db.SaveChangesAsync();
 
         return Ok(new { mensaje = "Repuesto actualizado" });
@@ -95,6 +104,9 @@ public class RepuestosController(AppDbContext db) : ControllerBase
 
         db.Repuestos.Remove(repuesto);
         await db.SaveChangesAsync();
+
+        // Foto del repuesto: borrarla del bucket (best-effort).
+        await storage.EliminarImagenAsync(repuesto.ImagenUrl);
 
         return Ok(new { mensaje = "Repuesto eliminado" });
     }

@@ -17,6 +17,8 @@ export interface IRepuesto {
   precio: number;
   stock: number;
   activo: boolean;
+  // URL pública de la foto en Supabase Storage (null = sin foto).
+  imagenUrl: string | null;
 }
 
 export interface IRepuestoInput {
@@ -25,4 +27,5 @@ export interface IRepuestoInput {
   precio: number;
   stock: number;
   activo: boolean;
+  imagenUrl?: string | null;
 }

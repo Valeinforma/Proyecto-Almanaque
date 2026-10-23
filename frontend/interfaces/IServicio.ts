@@ -14,6 +14,8 @@ export interface IServicio {
   descripcion: string | null;
   precio: number;
   activo: boolean;
+  // URL pública de la foto en Supabase Storage (null = sin foto).
+  imagenUrl: string | null;
 }
 
 export interface IServicioInput {
@@ -21,4 +23,5 @@ export interface IServicioInput {
   descripcion?: string | null;
   precio: number;
   activo: boolean;
+  imagenUrl?: string | null;
 }

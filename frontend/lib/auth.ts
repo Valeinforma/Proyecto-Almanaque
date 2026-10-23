@@ -45,6 +45,31 @@ export function cerrarSesion(): void {
   borrarSesion();
 }
 
+// Registro público (pantalla /registro): POST /api/auth/registro.
+// El backend crea el usuario con rol Recepcion y responde con el
+// MISMO shape que el login → acá solo guardamos la sesión.
+// Lanza ApiError(409, 'Ya existe un usuario con ese email') si el
+// email está tomado, o ApiError(400, ...) si la validación falla.
+export async function registrarse(
+  nombre: string,
+  email: string,
+  password: string
+): Promise<ISesionUsuario> {
+  const sesion = await api.post<ISesionUsuario>('/auth/registro', {
+    nombre,
+    email,
+    password,
+  });
+
+  // Misma sanidad que en iniciarSesion: sin id no hay sesión.
+  if (!sesion || typeof sesion.id !== 'number') {
+    throw new Error('Respuesta de registro inválida');
+  }
+
+  guardarSesion(sesion);
+  return sesion;
+}
+
 // ---------- lectura con caché ----------
 // useSyncExternalStore exige que getSnapshot devuelva SIEMPRE el
 // mismo objeto mientras no cambie el valor crudo (sino React cree

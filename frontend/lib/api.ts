@@ -152,3 +152,51 @@ export const api = {
   put: <T>(ruta: string, cuerpo: unknown) => apiFetch<T>('PUT', ruta, cuerpo),
   delete: <T>(ruta: string) => apiFetch<T>('DELETE', ruta),
 };
+
+// ---------- subida de imágenes (Supabase Storage vía backend) ----------
+// POST /api/archivo/imagen?carpeta=repuestos|servicios (multipart).
+// El backend sube al bucket con la service key y devuelve { url };
+// acá solo devolvemos la URL pública. Mismas reglas que apiFetch:
+// header X-Usuario-Id, errores { mensaje } → ApiError, 401 → borrar sesión.
+export type CarpetaImagen = 'repuestos' | 'servicios';
+
+export async function subirImagen(carpeta: CarpetaImagen, archivo: File): Promise<string> {
+  const usuarioId = obtenerIdSesion();
+
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+
+  // Sin Content-Type manual: el browser pone el boundary del multipart.
+  const headers: Record<string, string> = {};
+  if (usuarioId !== null) {
+    headers['X-Usuario-Id'] = String(usuarioId);
+  }
+
+  const respuesta = await fetch(
+    `${API_URL}/api/archivo/imagen?carpeta=${encodeURIComponent(carpeta)}`,
+    { method: 'POST', headers, body: formData }
+  );
+
+  let datos: unknown = null;
+  try {
+    datos = await respuesta.json();
+  } catch {
+    datos = null;
+  }
+
+  if (!respuesta.ok) {
+    const mensajeBackend =
+      datos && typeof datos === 'object' && 'mensaje' in datos
+        ? String((datos as { mensaje: unknown }).mensaje)
+        : `Error HTTP ${respuesta.status}`;
+
+    if (respuesta.status === 401) borrarSesion();
+    throw new ApiError(respuesta.status, mensajeBackend);
+  }
+
+  const url = (datos as { url?: unknown } | null)?.url;
+  if (typeof url !== 'string') {
+    throw new ApiError(500, 'La API no devolvió la URL de la imagen.');
+  }
+  return url;
+}

@@ -1,6 +1,7 @@
 using Backend.Data;
 using Backend.Dtos;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace Backend.Controllers;
 [ApiController]
 [Route("api/servicios")]
 [Authorize]
-public class ServiciosController(AppDbContext db) : ControllerBase
+public class ServiciosController(AppDbContext db, SupabaseStorageService storage) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] string? search, [FromQuery] bool? soloActivos)
@@ -52,7 +53,8 @@ public class ServiciosController(AppDbContext db) : ControllerBase
             Nombre = request.Nombre.Trim(),
             Descripcion = request.Descripcion,
             Precio = request.Precio,
-            Activo = request.Activo
+            Activo = request.Activo,
+            ImagenUrl = request.ImagenUrl
         };
 
         db.Servicios.Add(servicio);
@@ -75,6 +77,12 @@ public class ServiciosController(AppDbContext db) : ControllerBase
         servicio.Precio = request.Precio;
         servicio.Activo = request.Activo;
 
+        // Foto vieja → fuera del bucket si cambió (best-effort).
+        if (servicio.ImagenUrl != request.ImagenUrl)
+            await storage.EliminarImagenAsync(servicio.ImagenUrl);
+
+        servicio.ImagenUrl = request.ImagenUrl;
+
         await db.SaveChangesAsync();
 
         return Ok(new { mensaje = "Servicio actualizado" });
@@ -96,6 +104,9 @@ public class ServiciosController(AppDbContext db) : ControllerBase
 
         db.Servicios.Remove(servicio);
         await db.SaveChangesAsync();
+
+        // Foto del servicio: borrarla del bucket (best-effort).
+        await storage.EliminarImagenAsync(servicio.ImagenUrl);
 
         return Ok(new { mensaje = "Servicio eliminado" });
     }

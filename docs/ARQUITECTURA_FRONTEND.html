@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TechFix Manager — Cómo funciona por dentro el frontend</title>
+<style>
+  :root{
+    --fondo:#0b1020; --panel:#121a2e; --panel2:#16203a; --borde:rgba(255,255,255,.09);
+    --texto:#e2e8f0; --texto2:#94a3b8;
+    --primario:#38bdf8; --violeta:#a78bfa; --verde:#34d399; --rojo:#f87171; --ambar:#fbbf24;
+    --mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--fondo);color:var(--texto);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--primario);text-decoration:none}
+  code,pre{font-family:var(--mono)}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+
+  /* ---------- hero ---------- */
+  .hero{padding:44px 0 26px;background:
+      radial-gradient(900px 300px at 15% -40px,rgba(56,189,248,.18),transparent),
+      radial-gradient(700px 260px at 85% -60px,rgba(167,139,250,.16),transparent);
+    border-bottom:1px solid var(--borde)}
+  .hero h1{margin:0 0 8px;font-size:30px;letter-spacing:-.5px}
+  .hero p{margin:0;color:var(--texto2);max-width:820px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .badge{font-size:12px;padding:4px 10px;border:1px solid var(--borde);border-radius:999px;background:var(--panel);color:var(--texto2)}
+  .badge b{color:var(--primario);font-weight:600}
+
+  /* ---------- nav ---------- */
+  nav.toc{position:sticky;top:0;z-index:50;background:rgba(11,16,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
+  nav.toc .wrap{display:flex;gap:4px;overflow-x:auto;padding:10px 20px}
+  nav.toc a{font-size:13px;color:var(--texto2);padding:6px 12px;border-radius:8px;white-space:nowrap}
+  nav.toc a:hover{background:var(--panel2);color:var(--texto)}
+
+  /* ---------- secciones ---------- */
+  section{padding:42px 0 10px}
+  h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--primario),var(--violeta));color:#06111f;font-size:15px;font-weight:700}
+  .sub{color:var(--texto2);margin:0 0 22px;max-width:880px}
+  h3{font-size:15px;margin:26px 0 10px;color:var(--texto)}
+
+  /* ---------- diagrama de capas ---------- */
+  .flow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+  .capa{flex:1 1 170px;min-width:160px;background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+  .capa:hover{border-color:var(--primario);transform:translateY(-3px)}
+  .capa.activa{border-color:var(--primario);box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+  .capa .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--violeta);font-weight:700}
+  .capa .nom{font-family:var(--mono);font-size:13px;margin:6px 0 8px;color:var(--primario);word-break:break-all}
+  .capa .rol{font-size:12.5px;color:var(--texto2);line-height:1.45}
+  .flecha{display:flex;align-items:center;color:var(--texto2);font-size:20px;flex:0 0 auto}
+  .detalle{margin-top:18px;background:var(--panel2);border:1px solid var(--borde);border-radius:14px;overflow:hidden}
+  .detalle .cab{padding:12px 16px;border-bottom:1px solid var(--borde);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .detalle .cab .ruta{font-family:var(--mono);font-size:13px;color:var(--primario)}
+  .detalle .cab .quedice{font-size:12.5px;color:var(--texto2)}
+  .detalle pre{margin:0;padding:16px;overflow:auto;font-size:12.8px;line-height:1.6;background:#0d1426}
+  .pista{font-size:12.5px;color:var(--texto2);margin-top:10px}
+  .pista b{color:var(--ambar)}
+
+  /* código */
+  .c-com{color:#6b7d99;font-style:italic}
+  .c-str{color:#a5d6a7}
+
+  /* ---------- simulador ---------- */
+  .sim{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+  @media(max-width:860px){.sim{grid-template-columns:1fr}}
+  .sim-panel{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:16px}
+  .sim-panel h4{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--texto2)}
+  .browser{background:#0d1426;border:1px solid var(--borde);border-radius:12px;overflow:hidden}
+  .browser .bar{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--borde)}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .url{flex:1;font-family:var(--mono);font-size:11.5px;color:var(--texto2);background:#0b1020;border:1px solid var(--borde);border-radius:6px;padding:3px 9px}
+  #pantalla{min-height:280px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--primario);border-top-color:transparent;animation:sp .8s linear infinite;margin:40px auto 10px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .centro{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:var(--texto2);font-size:13.5px}
+  .caja{border-radius:12px;padding:16px;text-align:center;font-size:13.5px}
+  .caja.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);color:#fecaca}
+  .caja.vacio{background:rgba(255,255,255,.03);border:1px dashed var(--borde);color:var(--texto2)}
+  .btn{appearance:none;border:1px solid var(--borde);background:var(--panel2);color:var(--texto);font:inherit;font-size:13px;padding:7px 14px;border-radius:9px;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--primario);color:var(--primario)}
+  .btn.pri{background:var(--primario);border-color:var(--primario);color:#06111f;font-weight:600}
+  .btn.pri:hover{filter:brightness(1.1);color:#06111f}
+  .btn.on{outline:2px solid var(--violeta);outline-offset:1px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .barra{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+  .campo{flex:1;min-width:150px;background:#0b1020;border:1px solid var(--borde);border-radius:9px;padding:7px 11px;color:var(--texto2);font-size:13px}
+  .grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .tarjeta{background:var(--panel2);border:1px solid var(--borde);border-radius:11px;padding:12px}
+  .tarjeta b{display:block;font-size:13.5px}
+  .tarjeta span{font-size:11.5px;color:var(--texto2)}
+  .tarjeta .acc{margin-top:8px;display:flex;gap:6px;color:var(--texto2);font-size:11px}
+  .flash{animation:fl .5s ease}
+  @keyframes fl{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .escenarios{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .consola{background:#090e1c;border:1px solid var(--borde);border-radius:12px;padding:12px;height:340px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.75}
+  .log{display:flex;gap:9px;opacity:0;animation:fl .3s forwards}
+  .log .t{color:#4b5b78;flex:0 0 auto}
+  .log.render .m{color:var(--primario)}
+  .log.effect .m{color:var(--violeta)}
+  .log.http .m{color:var(--ambar)}
+  .log.state .m{color:var(--verde)}
+  .log.error .m{color:var(--rojo)}
+  .log.info .m{color:var(--texto2)}
+  .estados{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--borde);background:var(--panel2);color:var(--texto2)}
+  .chip b{color:var(--texto)}
+
+  /* ---------- acordeón ---------- */
+  details.acc{background:var(--panel);border:1px solid var(--borde);border-radius:13px;margin-bottom:12px;overflow:hidden}
+  details.acc summary{cursor:pointer;padding:14px 16px;font-weight:600;font-size:14.5px;list-style:none;display:flex;gap:10px;align-items:center}
+  details.acc summary::-webkit-details-marker{display:none}
+  details.acc summary::before{content:"▸";color:var(--primario);transition:.2s}
+  details.acc[open] summary::before{transform:rotate(90deg)}
+  details.acc .body{padding:0 16px 16px}
+  details.acc pre{background:#0d1426;border:1px solid var(--borde);border-radius:10px;padding:14px;overflow:auto;font-size:12.8px;line-height:1.6;margin:10px 0 0}
+  .kv{display:grid;grid-template-columns:190px 1fr;gap:6px 14px;font-size:13.5px;margin-top:6px}
+  .kv code{color:var(--primario);font-size:12.5px}
+  .kv div{color:var(--texto2)}
+  @media(max-width:640px){.kv{grid-template-columns:1fr}}
+
+  /* ---------- seguridad ---------- */
+  .dos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){.dos{grid-template-columns:1fr}}
+  .grupo{border:1px solid var(--borde);border-radius:14px;padding:16px;background:var(--panel)}
+  .grupo h4{margin:0 0 4px;font-size:15px}
+  .grupo .ruta{font-family:var(--mono);font-size:12.5px;color:var(--primario)}
+  .grupo ul{margin:10px 0 0;padding-left:18px;color:var(--texto2);font-size:13.5px}
+  .grupo.pub{border-color:rgba(52,211,153,.35)}
+  .grupo.app{border-color:rgba(56,189,248,.35)}
+  .guard{background:#0d1426;border:1px solid var(--borde);border-radius:12px;padding:16px;margin-top:14px}
+  .guard-pasos{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .paso{flex:1 1 150px;background:var(--panel2);border:1px solid var(--borde);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--texto2);opacity:.4;transition:.3s}
+  .paso.on{opacity:1;border-color:var(--primario);color:var(--texto)}
+  .paso.on.bad{border-color:var(--rojo)}
+  .paso.on.ok{border-color:var(--verde)}
+  .paso b{display:block;color:var(--texto);font-size:12.5px;margin-bottom:3px}
+  table.niveles{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+  table.niveles th,table.niveles td{border:1px solid var(--borde);padding:10px 12px;text-align:left;vertical-align:top}
+  table.niveles th{background:var(--panel2);font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--texto2)}
+  table.niveles td:first-child{color:var(--primario);font-weight:600;white-space:nowrap}
+
+  /* ---------- defensa ---------- */
+  table.qa{width:100%;border-collapse:collapse;font-size:13.8px}
+  table.qa th,table.qa td{border:1px solid var(--borde);padding:11px 13px;text-align:left;vertical-align:top}
+  table.qa th{background:var(--panel2);width:30%}
+  table.qa td{color:var(--texto2)}
+  table.qa td b{color:var(--texto)}
+
+  footer{margin-top:46px;padding:22px 0 40px;border-top:1px solid var(--borde);color:var(--texto2);font-size:12.5px;text-align:center}
+  .leyenda{font-size:12.5px;color:var(--texto2);margin-top:8px}
+  .leyenda i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>TechFix Manager — Cómo funciona por dentro el frontend</h1>
+    <p>Explicación visual de la arquitectura por módulos, el ciclo de carga de una pantalla en React/Next.js,
+       la seguridad por route groups y el rol de cada capa. Basado en el código real del proyecto.</p>
+    <div class="badges">
+      <span class="badge"><b>Next.js</b> 16.3 · App Router</span>
+      <span class="badge"><b>React</b> 19.2</span>
+      <span class="badge"><b>TypeScript</b> 5</span>
+      <span class="badge"><b>Tailwind</b> v4</span>
+      <span class="badge">Backend: <b>ASP.NET Core 10</b></span>
+      <span class="badge">DB: <b>PostgreSQL 18</b></span>
+      <span class="badge">17 pantallas · 6 módulos</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#capas">① Arquitectura por módulos</a>
+    <a href="#simulador">② Simulador de carga</a>
+    <a href="#libs">③ lib/api y lib/auth</a>
+    <a href="#seguridad">④ Seguridad y rutas</a>
+    <a href="#defensa">⑤ Preguntas de defensa</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ 1. CAPAS ============ -->
+  <section id="capas">
+    <h2><span class="num">1</span> La arquitectura por módulos (las 4 capas + HTTP)</h2>
+    <p class="sub">Cada pantalla del sistema repite el <b>mismo patrón</b>: una página delgada que solo compone, un Provider
+      dueño del estado, una Vista que solo dibuja, un hook que trae los datos y un único cliente HTTP.
+      Hacé clic en cada tarjeta para ver su código real.</p>
+
+    <div class="flow" id="flow">
+      <div class="capa" data-i="0">
+        <div class="tag">Capa 1 · Server</div>
+        <div class="nom">page.tsx</div>
+        <div class="rol">Página delgada: SOLO compone Provider + Vista. Cero lógica.</div>
+      </div>
+      <div class="flecha">→</div>
+      <div class="capa" data-i="1">
+        <div class="tag">Capa 2 · Estado</div>
+        <div class="nom">ClientesContext</div>
+        <div class="rol">El DUEÑO del estado: lista, búsqueda, modales y CRUD.</div>
+      </div>
+      <div class="flecha">→</div>
+      <div class="capa" data-i="2">
+        <div class="tag">Capa 3 · UI</div>
+        <div class="nom">ClientesVista</div>
+        <div class="rol">Solo renderiza. No hace fetch ni tiene lógica de negocio.</div>
+      </div>
+      <div class="flecha">→</div>
+      <div class="capa" data-i="3">
+        <div class="tag">Capa 4 · Datos</div>
+        <div class="nom">useClientesApi</div>
+        <div class="rol">Fetch + estados cargando/error + operaciones CRUD.</div>
+      </div>
+      <div class="flecha">→</div>
+      <div class="capa" data-i="4">
+        <div class="tag">Capa 5 · HTTP</div>
+        <div class="nom">lib/api.ts</div>
+        <div class="rol">Cliente único: base URL, header de sesión, errores y 401.</div>
+      </div>
+    </div>
+
+    <div class="detalle" id="detalle"></div>
+    <p class="pista">💡 Los módulos <b>clientes, equipos, órdenes, usuarios, servicios y repuestos</b> usan exactamente
+      las mismas 5 piezas (cambiando el nombre). Se agrega un módulo nuevo = se copia el patrón; no se toca nada existente.</p>
+  </section>
+
+  <!-- ============ 2. SIMULADOR ============ -->
+  <section id="simulador">
+    <h2><span class="num">2</span> Simulador: cómo arranca la carga de una pantalla</h2>
+    <p class="sub">Reproducción fiel del flujo real de <code>/clientes</code>: render inicial con <code>cargando=true</code> →
+      <code>useEffect</code> → <code>api.get()</code> con header de sesión → <code>setState</code> → re-render.
+      Elegí un escenario y mirá la consola paso a paso.</p>
+
+    <div class="sim">
+      <div class="sim-panel">
+        <h4>Navegador — localhost:3000/clientes</h4>
+        <div class="browser">
+          <div class="bar">
+            <span class="dot" style="background:#ff5f57"></span>
+            <span class="dot" style="background:#febc2e"></span>
+            <span class="dot" style="background:#28c840"></span>
+            <span class="url" id="url">http://localhost:3000/clientes</span>
+          </div>
+          <div id="pantalla"></div>
+        </div>
+        <div class="escenarios">
+          <button class="btn pri" data-sim="ok">▶ Flujo completo (éxito)</button>
+          <button class="btn" data-sim="error">Error HTTP 500</button>
+          <button class="btn" data-sim="vacio">Lista vacía</button>
+          <button class="btn" data-sim="401">Sesión expirada (401)</button>
+        </div>
+        <div class="estados">
+          <span class="chip">Los 4 estados de UI: <b>Cargando</b> · <b>Error</b> · <b>Vacío</b> · <b>Con datos</b></span>
+        </div>
+        <p class="leyenda">Ninguna pantalla queda “en blanco”: siempre hay un estado resuelto
+          (<code>Cargando</code>, <code>ErrorCarga</code> con Reintentar, <code>ListaVacia</code> o datos).</p>
+      </div>
+
+      <div class="sim-panel">
+        <h4>Consola del ciclo de vida React</h4>
+        <div class="consola" id="consola"></div>
+        <p class="leyenda">
+          <i style="background:var(--primario)"></i>render
+          <i style="background:var(--violeta)"></i>effect
+          <i style="background:var(--ambar)"></i>HTTP
+          <i style="background:var(--verde)"></i>setState
+          <i style="background:var(--rojo)"></i>error
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. LIBS ============ -->
+  <section id="libs">
+    <h2><span class="num">3</span> Las dos piezas transversales: lib/api.ts y lib/auth.ts</h2>
+    <p class="sub">Ningún componente hace <code>fetch</code> “a pelo”: todo el HTTP pasa por un único cliente, y la sesión es
+      reactiva gracias a <code>useSyncExternalStore</code>.</p>
+
+    <details class="acc" open>
+      <summary>lib/api.ts — el único punto de salida a la API</summary>
+      <div class="body">
+        <div class="kv">
+          <code>API_URL</code><div>Base URL del backend desde <code>.env.local</code> (<code>NEXT_PUBLIC_API_URL</code>).</div>
+          <code>X-Usuario-Id</code><div>Header de autenticación que se agrega a TODOS los pedidos (se lee de localStorage).</div>
+          <code>ApiError</code><div>Error tipado: siempre sabemos el status HTTP y el mensaje amigable del backend.</div>
+          <code>401 → borrarSesion()</code><div>Si la sesión ya no sirve, se borra y el guard del layout redirige a /login.</div>
+        </div>
+<pre><code>const headers = { 'Content-Type': 'application/json' };
+if (usuarioId !== null) headers['X-Usuario-Id'] = String(usuarioId);   // sesión
+
+const r = await fetch(`${API_URL}/api${ruta}`, { method: metodo, headers, body: ... });
+
+if (!r.ok) {
+  const mensaje = datos?.mensaje ?? `Error HTTP ${r.status}`;
+  if (r.status === 401 && ruta !== '/auth/login') borrarSesion();       // sesión inválida
+  throw new ApiError(r.status, mensaje);                                // { mensaje } del backend
+}
+return datos;
+
+export const api = { get, post, put, delete };   // ← TODA la app usa esta única interfaz</code></pre>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>lib/auth.ts — sesión reactiva con useSyncExternalStore</summary>
+      <div class="body">
+        <div class="kv">
+          <code>iniciarSesion()</code><div>POST /auth/login → guarda <code>{ id, nombre, email, rol }</code> en localStorage.</div>
+          <code>useSesion()</code><div>Hook reactivo: si cambia la sesión (login, logout o 401), todas las pantallas se actualizan solas.</div>
+          <code>tieneRol()</code><div>Oculta botones/menús según rol (UX). La autorización REAL la hace el backend.</div>
+          <code>snapshot servidor = null</code><div>Evita el “hydration mismatch” entre el HTML del server y el del navegador.</div>
+        </div>
+<pre><code>function suscribir(alCambiar) {
+  window.addEventListener(CLAVE_SESION, alCambiar);  // cambios de ESTA pestaña (login/logout/401)
+  window.addEventListener('storage', alCambiar);     // cambios de OTRAS pestañas
+  return () => { /* removeEventListener… */ };
+}
+
+export function useSesion(): ISesionUsuario | null {
+  return useSyncExternalStore(suscribir, leerSesion, sesionEnServidor);
+}
+// Por qué no useState+useEffect: localStorage es una fuente EXTERNA a React;
+// esta API le dice a React cómo leerla y suscribirse, sin efectos ni bucles.</code></pre>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>hooks/useXxxApi.ts — la carga inicial (el momento exacto del arranque)</summary>
+      <div class="body">
+<pre><code>const [clientes, setClientes]   = useState&lt;ICliente[]&gt;([]);
+const [cargando, setCargando]   = useState(autoCargar);   // ¡arranca en true!
+const [error, setError]         = useState&lt;string | null&gt;(null);
+
+const obtenerClientes = useCallback(() =&gt;
+  Promise.resolve()
+    .then(() =&gt; { setCargando(true); setError(null); })
+    .then(() =&gt; api.get&lt;ICliente[]&gt;('/clientes'))
+    .then(lista =&gt; { setClientes(lista); setCargando(false); })   // → re-render
+    .catch(e =&gt; { setError(e.message); setCargando(false); })
+, []);
+
+useEffect(() =&gt; { if (autoCargar) obtenerClientes(); }, [autoCargar, obtenerClientes]);
+// ↑ el ÚNICO punto donde se dispara la primera carga: al montar el componente.</code></pre>
+        <p class="leyenda">La forma <code>.then()</code> (y no <code>async/await</code>) cumple la regla ESLint
+          <code>react-hooks/set-state-in-effect</code>, que prohíbe un setState síncrono directo en el cuerpo del effect.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ 4. SEGURIDAD ============ -->
+  <section id="seguridad">
+    <h2><span class="num">4</span> Seguridad y rutas</h2>
+    <p class="sub">Next.js separa las rutas públicas de las protegidas con <b>route groups</b> (las carpetas con paréntesis
+      no aparecen en la URL) y protege el acceso con un <b>guard</b> en el layout.</p>
+
+    <div class="dos">
+      <div class="grupo pub">
+        <h4>🟢 Grupo público — <span class="ruta">(publico)/</span></h4>
+        <div class="ruta">sin login</div>
+        <ul>
+          <li><code>/</code> — landing</li>
+          <li><code>/tienda</code> — catálogo de servicios y repuestos</li>
+          <li><code>/registro</code> — alta de usuario (rol Recepción)</li>
+          <li><code>/login</code> — inicio de sesión (fuera del grupo)</li>
+        </ul>
+      </div>
+      <div class="grupo app">
+        <h4>🔵 Grupo protegido — <span class="ruta">(app)/</span></h4>
+        <div class="ruta">requiere sesión</div>
+        <ul>
+          <li><code>/dashboard</code>, <code>/clientes</code>, <code>/equipos</code></li>
+          <li><code>/ordenes</code> (+ <code>/nueva</code>, <code>/[id]</code>)</li>
+          <li><code>/usuarios</code>, <code>/servicios</code>, <code>/repuestos</code></li>
+          <li><code>/configuracion</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="guard">
+      <div class="barra">
+        <h4 style="margin:0;font-size:14px">Guard en <code>app/(app)/layout.tsx</code> — elegí un escenario:</h4>
+        <span>
+          <button class="btn pri" data-guard="sin">Simular SIN sesión</button>
+          <button class="btn" data-guard="con">Simular CON sesión</button>
+        </span>
+      </div>
+      <div class="guard-pasos" id="guardPasos">
+        <div class="paso"><b>1. Monta el layout</b> Se ejecuta <code>'use client'</code> + <code>useSesion()</code>.</div>
+        <div class="paso"><b>2. Lee la sesión</b> <code>obtenerSesion()</code> → localStorage.</div>
+        <div class="paso"><b>3a. Sin sesión</b> Spinner “Verificando sesión…” → <code>router.replace('/login')</code>.</div>
+        <div class="paso"><b>3b. Con sesión</b> Monta el shell: Sidebar + Header + contenido.</div>
+      </div>
+      <p class="leyenda">El spinner intermedio evita el <b>“flash”</b> de ver contenido protegido un instante antes de la
+        redirección. <code>replace()</code> (y no <code>push()</code>) para que el botón “atrás” no vuelva a la ruta protegida.</p>
+<pre><code>const sesion = useSesion();                 // reactiva: null = sin sesión
+
+useEffect(() =&gt; {
+  if (obtenerSesion() === null) router.replace('/login');
+}, [router, sesion]);
+
+if (sesion === null) return &lt;Spinner texto="Verificando sesión…" /&gt;;   // evita el flash
+return &lt;Shell&gt;&lt;Sidebar /&gt;&lt;Header /&gt;&lt;main&gt;{children}&lt;/main&gt;&lt;/Shell&gt;;</code></pre>
+    </div>
+
+    <h3> Autorización en dos niveles (pregunta clásica de defensa)</h3>
+    <table class="niveles">
+      <tr><th>Nivel</th><th>Dónde vive</th><th>Qué hace</th></tr>
+      <tr>
+        <td>UX</td>
+        <td>Frontend — <code>tieneRol('admin')</code></td>
+        <td>Oculta botones y menús que el usuario no podría usar. Es comodidad visual, <b>no es seguridad</b>.</td>
+      </tr>
+      <tr>
+        <td>Seguridad real</td>
+        <td>Backend — <code>[Authorize]</code> + validación de rol por endpoint</td>
+        <td>El backend valida en CADA request quién es el usuario (header <code>X-Usuario-Id</code>), si existe/está activo
+          y si su rol permite la operación. Un id falsificado a mano <b>no otorga permisos</b>.</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ============ 5. DEFENSA ============ -->
+  <section id="defensa">
+    <h2><span class="num">5</span> Preguntas de defensa — resumen</h2>
+    <p class="sub">Respuestas cortas a las objeciones más frecuentes sobre el proyecto.</p>
+    <table class="qa">
+      <tr><th>Pregunta</th><th>Respuesta</th></tr>
+      <tr><th>¿Por qué solo React y Next.js, sin Redux ni React Query?</th>
+          <td>El dominio son 6 módulos CRUD; Context + hooks cubre el caso sin el peso de librerías extra. Menos dependencias = menos riesgo de vulnerabilidades y de rotura por upgrades. Solo se agrega <b>lucide-react</b> (iconos).</td></tr>
+      <tr><th>¿Dónde está la seguridad si el guard es en el cliente?</th>
+          <td>El guard es UX. La seguridad real está en el backend: header <code>X-Usuario-Id</code> validado por <code>HeaderAuthenticationHandler</code> + <code>[Authorize]</code> por endpoint.</td></tr>
+      <tr><th>¿Qué pasa si el backend cae?</th>
+          <td>Nada queda en blanco: <code>ErrorCarga</code> muestra el mensaje y ofrece <b>Reintentar</b> (vuelve a ejecutar el GET).</td></tr>
+      <tr><th>¿Riesgo de guardar la sesión en localStorage?</th>
+          <td>Es una decisión deliberada sin tokens: allí solo vive <code>{ id, nombre, email, rol }</code> para la UI. El backend valida ese usuario en cada request; un id falsificado no sirve.</td></tr>
+      <tr><th>¿Escalabilidad?</th>
+          <td>Cada módulo es autocontenido (página + Context + Vista + hook + interfaces). Agregar un módulo = replicar el patrón, sin tocar lo existente.</td></tr>
+      <tr><th>¿Rendimiento?</th>
+          <td>Búsqueda filtrada en cliente (sin un request por tecla), páginas de listado como Server Components y el dashboard resuelve todo en <b>un solo GET</b> que arma el backend.</td></tr>
+      <tr><th>¿Testing y calidad?</th>
+          <td><code>pnpm smoke</code> prueba la capa de datos contra la API real (login, header, 401); <code>pnpm lint</code> y <code>pnpm build</code> (con typecheck) en cada entrega.</td></tr>
+    </table>
+  </section>
+</main>
+
+<footer>
+  TechFix Manager · Documento visual generado desde el código real de <code>D:\Po\Proyecto Almanaque\frontend</code>
+  · complementa <code>docs/GUIA_SISTEMA_TechFix_Manager.md</code>
+</footer>
+
+<script>
+/* ================= código real de las capas ================= */
+const CAPAS = [
+  {
+    ruta: 'app/(app)/clientes/page.tsx',
+    que: 'Server Component · SOLO compone',
+    desc: 'La página no tiene estado ni lógica: monta el Provider del módulo y su Vista. Al ser Server Component, Next la puede renderizar en el servidor y enviar HTML al navegador.',
+    code: `// Página DELGADA — todo lo demás vive en components/
+import { ClientesProvider } from '@/components/ClientesContext/ClientesContext';
+import ClientesVista from '@/components/ClientesVista/ClientesVista';
+
+export default function ClientesPage() {
+  return (
+    <ClientesProvider>
+      <ClientesVista />
+    </ClientesProvider>
+  );
+}`
+  },
+  {
+    ruta: 'components/ClientesContext/ClientesContext.tsx',
+    que: "'use client' · dueño del ESTADO",
+    desc: 'El Provider concentra TODO el estado del módulo: la lista (vía el hook), la búsqueda, qué modal está abierto y las operaciones CRUD. La Vista lo consume con useClientes().',
+    code: `'use client';
+const ClientesContext = createContext<ClientesContextValue | null>(null);
+
+export function ClientesProvider({ children }) {
+  const { clientes, cargando, error, editarCliente, eliminarCliente }
+    = useClientesApi();                                  // capa de datos
+
+  const [busqueda, setBusqueda] = useState('');
+  const [clienteAEditar, setClienteAEditar] = useState(null);   // null = cerrado
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+
+  // Filtrado EN CLIENTE: evita un request por tecla
+  const clientesVisibles = busqueda
+    ? clientes.filter(c => c.nombre.toLowerCase().includes(busqueda))
+    : clientes;
+
+  async function guardarEdicion(datos) {
+    await editarCliente(clienteAEditar.id, datos);       // PUT vía hook
+    setClienteAEditar(null);                             // cierra el modal
+  }
+  // … + value={...} y <ClientesContext.Provider>
+}`
+  },
+  {
+    ruta: 'components/ClientesVista/ClientesVista.tsx',
+    que: "'use client' · SOLO renderiza",
+    desc: 'La UI no hace fetch ni conoce endpoints: lee el contexto y decide qué mostrar entre los 4 estados. Prohibido lógica de negocio acá — eso la hace reutilizable y testeable.',
+    code: `'use client';
+export default function ClientesVista() {
+  const { cargando, error, recargar, busqueda, setBusqueda,
+          clientesVisibles, setClienteAEditar } = useClientes();
+
+  if (cargando) return <Cargando />;                     // 1) spinner
+  if (error)    return <ErrorCarga onReintentar={recargar} />;  // 2) error + reintentar
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <Buscador valor={busqueda} onCambio={setBusqueda} />
+      <Link href="/clientes/nuevo"><Button>Nuevo cliente</Button></Link>
+
+      {clientesVisibles.length === 0 && <ListaVacia texto="…" />}   // 3) vacío
+
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3">
+        {clientesVisibles.map(c => <Tarjeta key={c.id} … />)}       // 4) datos
+      </div>
+    </div>
+  );
+}`
+  },
+  {
+    ruta: 'hooks/useClientesApi.ts',
+    que: "'use client' · capa de DATOS",
+    desc: 'Un hook por módulo encapsula el ciclo completo: estado de carga, errores y CRUD. Los errores de carga quedan en `error` (no lanzan); las operaciones CRUD SÍ lanzan, para que el formulario muestre el mensaje.',
+    code: `'use client';
+export default function useClientesApi({ autoCargar = true } = {}) {
+  const [clientes, setClientes]   = useState([]);
+  const [cargando, setCargando]   = useState(autoCargar);  // arranca en true
+  const [error, setError]         = useState(null);
+
+  const obtenerClientes = useCallback(() =>
+    Promise.resolve()
+      .then(() => { setCargando(true); setError(null); })
+      .then(() => api.get('/clientes'))                   // ← capa 5
+      .then(lista => { setClientes(lista); setCargando(false); })
+      .catch(e => { setError(e.message); setCargando(false); })
+  , []);
+
+  useEffect(() => { if (autoCargar) obtenerClientes(); }, [autoCargar, obtenerClientes]);
+
+  return { clientes, cargando, error, obtenerClientes, agregarCliente,
+           editarCliente, eliminarCliente };
+}`
+  },
+  {
+    ruta: 'lib/api.ts',
+    que: 'Cliente HTTP centralizado',
+    desc: 'UN solo lugar para: la base URL (variable de entorno), el header de sesión X-Usuario-Id, el parseo de errores { mensaje } del backend y el borrado de sesión en 401. Los componentes jamás llaman fetch directamente.',
+    code: `export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5137';
+
+async function apiFetch(metodo, ruta, cuerpo) {
+  const usuarioId = obtenerIdSesion();               // lee localStorage
+  const headers = { 'Content-Type': 'application/json' };
+  if (usuarioId !== null) headers['X-Usuario-Id'] = String(usuarioId);
+
+  const r = await fetch(API_URL + '/api' + ruta, { method: metodo, headers, body });
+
+  if (r.status === 204) return undefined;            // DELETE sin contenido
+  if (!r.ok) {
+    const mensaje = datos?.mensaje ?? 'Error HTTP ' + r.status;
+    if (r.status === 401 && ruta !== '/auth/login') borrarSesion();  // → el guard redirige
+    throw new ApiError(r.status, mensaje);
+  }
+  return datos;
+}
+export const api = { get, post, put, delete };       // la interfaz de TODA la app`
+  }
+];
+
+/* ================= detalle de capas ================= */
+const detalle = document.getElementById('detalle');
+function mostrarCapa(i) {
+  const c = CAPAS[i];
+  document.querySelectorAll('.capa').forEach(el =>
+    el.classList.toggle('activa', +el.dataset.i === i));
+  detalle.innerHTML =
+    '<div class="cab"><span class="ruta">' + c.ruta + '</span>' +
+    '<span class="quedice">' + c.que + ' — ' + c.desc + '</span></div>' +
+    '<pre><code>' + resaltar(c.code) + '</code></pre>';
+}
+document.querySelectorAll('.capa').forEach(el =>
+  el.addEventListener('click', () => mostrarCapa(+el.dataset.i)));
+
+/* resaltado simple: comentarios de línea y strings */
+function resaltar(txt) {
+  return txt.split('\n').map(linea => {
+    const segura = esc(linea);
+    if (linea.trim().startsWith('//')) return '<span class="c-com">' + segura + '</span>';
+    return segura.replace(/('[^']*'|"[^"]*")/g, '<span class="c-str">$1</span>');
+  }).join('\n');
+}
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+mostrarCapa(0);
+
+/* ================= simulador ================= */
+const pantalla = document.getElementById('pantalla');
+const consola = document.getElementById('consola');
+const url = document.getElementById('url');
+let corriendo = 0;   // invalida flujos en curso
+
+const CLIENTES = [
+  { nombre: 'Laura Gómez',    equipos: 2 },
+  { nombre: 'Carlos Pérez',   equipos: 1 },
+  { nombre: 'Ana Ruiz',       equipos: 4 }
+];
+
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const mismo = id => corriendo === id;
+
+function log(tipo, texto) {
+  const hora = new Date().toLocaleTimeString('es-AR', { hour12: false });
+  const d = document.createElement('div');
+  d.className = 'log ' + tipo;
+  d.innerHTML = '<span class="t">' + hora + '</span><span class="m">' + texto + '</span>';
+  consola.appendChild(d);
+  consola.scrollTop = consola.scrollHeight;
+}
+
+function escenario(que) {
+  if (que === 'ok')      return CLIENTES;
+  if (que === 'vacio')   return [];
+  if (que === 'error')   throw new Error('Error HTTP 500 — falló el servidor');
+  if (que === '401')     throw new Error('401 — Credenciales incorrectas');
+}
+
+async function correr(que) {
+  const id = ++corriendo;
+  consola.innerHTML = '';
+  document.querySelectorAll('[data-sim]').forEach(b => b.disabled = true);
+  url.textContent = 'http://localhost:3000/clientes';
+  log('info', '── Usuario navega a /clientes ──');
+
+  /* 1) render inicial */
+  pantalla.innerHTML =
+    '<div class="centro"><div class="spin"></div><div>Cargando clientes…</div>' +
+    '<small>Cargando.tsx · cargando = true</small></div>';
+  log('render', 'page.tsx compone <ClientesProvider><ClientesVista/>');
+  log('render', 'useClientesApi → useState(autoCargar) ⇒ cargando = true');
+  log('render', 'ClientesVista: if (cargando) return <Cargando/>  → spinner');
+  await delay(750); if (!mismo(id)) return;
+
+  /* 2) effect */
+  log('effect', 'useEffect(montaje) → obtenerClientes()');
+  await delay(550); if (!mismo(id)) return;
+
+  /* 3) fetch con header */
+  log('http',  "api.get('/clientes') · header X-Usuario-Id: 3");
+  log('http',  'GET http://localhost:5137/api/clientes');
+  await delay(750); if (!mismo(id)) return;
+
+  /* 4) resultado */
+  let datos;
+  try {
+    datos = escenario(que);
+  } catch (e) {
+    if (que === '401') {
+      log('error', '401 → borrarSesion() (api.ts borra localStorage)');
+      pantalla.innerHTML =
+        '<div class="caja err flash"><b>401 · Sesión expirada</b><br>' +
+        'api.ts borra la sesión y notifica a useSesion()</div>';
+      await delay(800); if (!mismo(id)) return;
+      log('effect', 'useSesion() cambia a null → el GUARD del layout reacciona solo');
+      pantalla.innerHTML =
+        '<div class="centro"><div class="spin"></div><div>Verificando sesión…</div></div>';
+      await delay(900); if (!mismo(id)) return;
+      log('state', "router.replace('/login')  (replace, no push)");
+      url.textContent = 'http://localhost:3000/login';
+      pantalla.innerHTML =
+        '<div class="centro flash" style="margin:auto"><div style="font-size:26px">🔐</div>' +
+        '<b style="color:var(--texto)">Iniciar sesión</b>' +
+        '<small>Redirigido por el guard de app/(app)/layout.tsx</small></div>';
+      log('info', 'Fin del flujo: el contenido protegido NUNCA llegó a mostrarse.');
+    } else {
+      log('error', e.message);
+      log('state', "setState: error = mensaje · cargando = false");
+      pantalla.innerHTML =
+        '<div class="caja err flash"><b>No se pudieron cargar los clientes.</b><br>' +
+        '<span style="font-size:12.5px">' + e.message + '</span><br><br>' +
+        '<button class="btn" id="reintentar">↻ Reintentar</button></div>';
+      const rt = document.getElementById('reintentar');
+      if (rt) rt.addEventListener('click', () => correr(que));
+      log('render', 're-render → <ErrorCarga onReintentar={recargar}/>  (nunca en blanco)');
+    }
+    document.querySelectorAll('[data-sim]').forEach(b => b.disabled = false);
+    return;
+  }
+
+  log('state', '200 OK → setClientes(' + datos.length + ' registros) · setCargando(false)');
+  await delay(350); if (!mismo(id)) return;
+  log('render', 'React re-renderiza el Provider → la Vista recibe los datos por contexto');
+
+  if (datos.length === 0) {
+    pantalla.innerHTML =
+      '<div class="caja vacio flash"><b>Todavía no hay clientes.</b><br>Creá el primero.' +
+      '</div><div class="barra"><span class="campo">Buscar por nombre, apellido o email…</span>' +
+      '<button class="btn pri">+ Nuevo cliente</button></div>';
+    log('render', 'render → <ListaVacia/>  (estado vacío resuelto)');
+  } else {
+    pantalla.innerHTML =
+      '<div class="barra"><span class="campo">Buscar por nombre, apellido o email…</span>' +
+      '<button class="btn pri">+ Nuevo cliente</button></div>' +
+      '<div class="grilla flash">' +
+      datos.map(c =>
+        '<div class="tarjeta"><b>' + c.nombre + '</b><span>' + c.equipos +
+        (c.equipos === 1 ? ' equipo' : ' equipos') + '</span>' +
+        '<div class="acc"><span>✏ editar</span><span>🗑 eliminar</span><span>🖥 equipos</span></div></div>'
+      ).join('') + '</div>';
+    log('state', 'Pantalla CON DATOS: grilla de ' + datos.length + ' tarjetas ✔');
+  }
+  log('info', '── Flujo completo: render → effect → fetch → setState → re-render ──');
+  document.querySelectorAll('[data-sim]').forEach(b => b.disabled = false);
+}
+
+document.querySelectorAll('[data-sim]').forEach(b =>
+  b.addEventListener('click', () => correr(b.dataset.sim)));
+correr('ok');
+
+/* ================= guard ================= */
+const pasos = [...document.querySelectorAll('#guardPasos .paso')];
+async function correrGuard(tipo) {
+  pasos.forEach(p => p.classList.remove('on', 'bad', 'ok'));
+  document.querySelectorAll('[data-guard]').forEach(b => b.disabled = true);
+  const p = i => { pasos[i].classList.add('on'); };
+  p(0); await delay(700);
+  p(1); await delay(700);
+  if (tipo === 'sin') {
+    p(2); pasos[2].classList.add('bad');
+    await delay(900);
+  } else {
+    p(3); pasos[3].classList.add('ok');
+  }
+  document.querySelectorAll('[data-guard]').forEach(b => b.disabled = false);
+}
+document.querySelectorAll('[data-guard]').forEach(b =>
+  b.addEventListener('click', () => correrGuard(b.dataset.guard)));
+</script>
+</body>
+</html>

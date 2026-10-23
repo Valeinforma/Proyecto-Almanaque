@@ -21,6 +21,21 @@ public class AuthController(AuthService authService) : ControllerBase
         return Ok(usuario);
     }
 
+    // Registro público (pantalla /registro): crea un usuario con rol
+    // Recepcion y responde con la MISMA forma que el login, así el
+    // frontend puede guardar la sesión sin un paso extra.
+    [HttpPost("registro")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Registro([FromBody] RegistroRequestDto request)
+    {
+        var usuario = await authService.RegistroAsync(request);
+
+        if (usuario is null)
+            return Conflict(new { mensaje = "Ya existe un usuario con ese email" });
+
+        return Ok(usuario);
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> Me()

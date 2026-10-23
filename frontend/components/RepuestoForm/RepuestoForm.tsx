@@ -18,6 +18,8 @@ import { useState } from 'react';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
 import TextArea from '@/components/TextArea/TextArea';
+import CampoImagen from '@/components/CampoImagen/CampoImagen';
+import { subirImagen } from '@/lib/api';
 import type { IRepuesto, IRepuestoInput } from '@/interfaces/IRepuesto';
 
 interface RepuestoFormProps {
@@ -32,6 +34,10 @@ export default function RepuestoForm({ inicial, onGuardar, onCancelar }: Repuest
   const [precio, setPrecio] = useState(inicial ? String(inicial.precio) : '');
   const [stock, setStock] = useState(inicial ? String(inicial.stock) : '0');
   const [activo, setActivo] = useState(inicial?.activo ?? true);
+
+  // Foto: archivo nuevo pendiente de subir + URL ya guardada.
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [imagenUrl, setImagenUrl] = useState<string | null>(inicial?.imagenUrl ?? null);
 
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [errorBackend, setErrorBackend] = useState<string | null>(null);
@@ -62,12 +68,27 @@ export default function RepuestoForm({ inicial, onGuardar, onCancelar }: Repuest
     setErrorBackend(null);
     setEnviando(true);
 
+    // ---------- foto (subida previa al guardado) ----------
+    let urlFinal = imagenUrl;
+    if (archivo) {
+      try {
+        urlFinal = await subirImagen('repuestos', archivo);
+        setImagenUrl(urlFinal);
+        setArchivo(null);
+      } catch (err) {
+        setErrorBackend(err instanceof Error ? err.message : 'No se pudo subir la imagen');
+        setEnviando(false);
+        return;
+      }
+    }
+
     const datos: IRepuestoInput = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || null,
       precio: precioNum,
       stock: stockNum,
       activo,
+      imagenUrl: urlFinal,
     };
 
     try {
@@ -117,6 +138,15 @@ export default function RepuestoForm({ inicial, onGuardar, onCancelar }: Repuest
           disabled={enviando}
         />
       </div>
+
+      <CampoImagen
+        label="Foto del repuesto"
+        archivo={archivo}
+        urlActual={imagenUrl}
+        onCambio={setArchivo}
+        onQuitarGuardada={() => setImagenUrl(null)}
+        disabled={enviando}
+      />
 
       <label className="flex cursor-pointer items-center gap-2 text-sm text-texto-2">
         <input

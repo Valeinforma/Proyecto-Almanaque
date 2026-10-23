@@ -30,7 +30,7 @@ Swagger UI disponible en `/swagger` (Development).
 
 ### Architecture
 
-- **Controllers** (8): `AuthController`, `ClientesController`, `EquiposController`, `OrdenesController`, `ServiciosController`, `RepuestosController`, `UsuariosController`, `DashboardController`
+- **Controllers** (9): `AuthController`, `ClientesController`, `EquiposController`, `OrdenesController`, `ServiciosController`, `RepuestosController`, `UsuariosController`, `DashboardController`, `CatalogoPublicoController`
 - `Models/` — 10 archivos: `Usuario`, `Cliente`, `Equipo`, `OrdenServicio`, `Servicio`, `Repuesto`, `OrdenDetalle`, `OrdenRepuestoDetalle`, `EstadoOrden` (enum), `Roles` (constantes)
 - `Dtos/` — 7 archivos: Auth, Cliente, Equipo, Orden, Catalogo, Usuario, Dashboard
 - `Services/` — `AuthService` (login + BCrypt), `HeaderAuthenticationHandler` (autenticación por header)
@@ -50,6 +50,7 @@ Swagger UI disponible en `/swagger` (Development).
 ### Auth (sin JWT)
 
 - `POST /api/auth/login` con `{ "email": "...", "password": "..." }` → devuelve `{ id, nombre, email, rol }` (NO emite token)
+- `POST /api/auth/registro` con `{ "nombre": "...", "email": "...", "password": "..." }` (público) → crea usuario con rol **Recepcion** (el rol nunca se acepta del cliente) y devuelve el mismo shape que el login. Email repetido → 409 `{ mensaje }`
 - Peticiones protegidas: header `X-Usuario-Id: <id>`
 - El backend valida el usuario en la DB (existe y activo) y aplica **su rol desde la DB**; el rol nunca se toma del header
 - Roles: `Admin`, `Tecnico`, `Recepcion`
@@ -60,7 +61,7 @@ Swagger UI disponible en `/swagger` (Development).
 
 | Grupo | Rutas | Roles con acceso |
 |-------|-------|------------------|
-| Auth | POST `/api/auth/login` (público), GET `/api/auth/me` | cualquiera autenticado |
+| Auth | POST `/api/auth/login` (público), POST `/api/auth/registro` (público), GET `/api/auth/me` | cualquiera autenticado |
 | Clientes | GET/POST/PUT/DELETE `/api/clientes` | Admin, Tecnico, Recepcion |
 | Equipos | GET/POST/PUT/DELETE `/api/equipos` | Admin, Tecnico, Recepcion |
 | Órdenes | GET/POST/PUT/DELETE `/api/ordenes`, PUT `/api/ordenes/{id}/estado` | Admin, Tecnico, Recepcion |
@@ -68,6 +69,8 @@ Swagger UI disponible en `/swagger` (Development).
 | Repuestos | GET/POST/PUT/DELETE `/api/repuestos` | Admin, Tecnico |
 | Usuarios | GET/POST/PUT/DELETE `/api/usuarios` | Admin |
 | Dashboard | GET `/api/dashboard/resumen` | cualquiera autenticado |
+| Catálogo público | GET `/api/publico/catalogo` | **público** (sin sesión): servicios activos + repuestos activos con stock, mínimos campos (vitrina de la landing `/`), incluye `imagenUrl` |
+| Archivos (imágenes) | POST `/api/archivo/imagen?carpeta=repuestos\|servicios` (multipart, campo `archivo`, JPG/PNG/WEBP/GIF ≤5MB) → `{ url }` | carpeta `repuestos`: Admin, Tecnico · carpeta `servicios`: solo Admin. Sube a Supabase Storage (bucket `StorageFix` público, carpeta `imagenes/`) desde el backend con la service key; el front solo recibe la URL pública. `repuestos`/`servicios` guardan la URL en `imagen_url` |
 
 ### Estados de orden
 

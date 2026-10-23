@@ -15,7 +15,10 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:5173",
-                "http://localhost:3000")
+                "http://localhost:3000",
+                //3001: puerto estable de desarrollo cuando el puerto3000
+                // lo ocupa otro proyecto de la máquina (Electronic Store).
+                "http://localhost:3001")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
@@ -28,6 +31,15 @@ builder.Services.AddAuthentication(HeaderAuthenticationHandler.SchemeName)
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<AuthService>();
+
+// Storage de Supabase (imágenes del catálogo): options desde la
+// sección "Supabase" + HttpClient tipado para la Storage API.
+builder.Services.Configure<SupabaseStorageOptions>(
+    builder.Configuration.GetSection(SupabaseStorageOptions.Seccion));
+builder.Services.AddHttpClient<SupabaseStorageService>(cliente =>
+{
+    cliente.Timeout = TimeSpan.FromSeconds(30);
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

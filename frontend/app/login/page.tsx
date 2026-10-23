@@ -19,7 +19,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Wrench, LogIn } from 'lucide-react';
+import Link from 'next/link';
+import { Eye, EyeOff, Wrench, LogIn, Store, UserPlus } from 'lucide-react';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
 import { iniciarSesion, haySesion } from '@/lib/auth';
@@ -167,6 +168,24 @@ export default function LoginPage() {
               Ingresar
             </Button>
           </form>
+
+          {/* Accesos sin sesión: la tienda es pública y el
+              registro crea la cuenta (rol Recepcion). */}
+          <div className="mt-4 flex flex-col gap-3">
+            <Link href="/tienda" className="w-full">
+              <Button variante="secondary" className="w-full">
+                <Store className="size-4" />
+                Ver la tienda
+              </Button>
+            </Link>
+
+            <Link href="/registro" className="w-full">
+              <Button variante="ghost" className="w-full">
+                <UserPlus className="size-4" />
+                Registrarse
+              </Button>
+            </Link>
+          </div>
 
           <p className="mt-6 text-xs text-texto-2">
             ¿Problemas para entrar? Consulte al administrador del sistema.

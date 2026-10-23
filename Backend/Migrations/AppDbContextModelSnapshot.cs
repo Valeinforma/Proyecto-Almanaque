@@ -290,6 +290,11 @@ namespace Backend.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("descripcion");
 
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("imagen_url");
+
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -327,6 +332,11 @@ namespace Backend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("descripcion");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("imagen_url");
 
                     b.Property<string>("Nombre")
                         .IsRequired()

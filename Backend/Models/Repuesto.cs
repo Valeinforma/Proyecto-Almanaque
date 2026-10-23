@@ -26,4 +26,11 @@ public class Repuesto
 
     [Column("activo")]
     public bool Activo { get; set; } = true;
+
+    // URL pública de la foto en Supabase Storage (bucket del
+    // proyecto, carpeta imagenes/). Null = sin foto (la card
+    // muestra el diseño de fallback).
+    [MaxLength(500)]
+    [Column("imagen_url")]
+    public string? ImagenUrl { get; set; }
 }
