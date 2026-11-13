@@ -1,0 +1,17 @@
+# Artefactos de build
+bin/
+obj/
+
+# Config local / secretos
+appsettings.Development.json
+*.user
+*.suo
+
+# Git / IDE
+.git
+.gitignore
+.vs/
+
+# Docker
+Dockerfile
+.dockerignore
