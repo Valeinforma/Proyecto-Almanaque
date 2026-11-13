@@ -18,7 +18,9 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000",
                 //3001: puerto estable de desarrollo cuando el puerto3000
                 // lo ocupa otro proyecto de la máquina (Electronic Store).
-                "http://localhost:3001")
+                "http://localhost:3001",
+                // Frontend publicado en Render.
+                "https://proyecto-almanaque.onrender.com")
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
