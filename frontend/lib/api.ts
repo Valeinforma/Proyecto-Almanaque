@@ -14,12 +14,17 @@
 //   await api.post('/clientes', datos)
 // ============================================================
 
-// Base URL de la API .NET. En desarrollo la definimos en
-// .env.local (NEXT_PUBLIC_API_URL). El prefijo NEXT_PUBLIC_
-// es lo que hace que Next.js la empaquete para el navegador.
-// Exportado para la pantalla de Configuración, que consulta el
-// health en la RAÍZ del backend (`GET /`), fuera del prefijo /api.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5137';
+// Base URL de la API .NET.
+//
+// Por defecto queda VACÍA: las llamadas salen como rutas relativas
+// (`/api/...`) y el proxy de Next (`app/api/[...ruta]/route.ts`) las
+// reenvía al backend usando API_URL, que es una variable solo del
+// servidor. Así el navegador nunca llama al backend y no hay CORS ni
+// bloqueos de loopback.
+//
+// NEXT_PUBLIC_API_URL sigue funcionando si se define (se empaqueta en
+// el bundle y el navegador llama directo al backend: requiere CORS).
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 // Clave donde guardamos el usuario en localStorage.
 // (Se define acá porque api.ts necesita leerla para el header,

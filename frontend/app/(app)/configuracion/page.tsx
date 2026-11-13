@@ -130,8 +130,13 @@ export default function ConfiguracionPage() {
   // OJO: NO tocamos estado en el cuerpo de esta función —
   // el effect la llama y el linter (react-hooks/set-state-in-effect)
   // rastrearía el setState. Los .then() sí están permitidos.
+  // El health vive en la RAÍZ del backend (Program.cs: MapGet("/")).
+  // Con API_URL vacía (modo proxy, el default) usamos /api/salud, que
+  // el server de Next reenvía a esa raíz. Si NEXT_PUBLIC_API_URL está
+  // definida, el navegador llama directo al backend.
   const verificarApi = useCallback(() => {
-    fetch(`${API_URL}/`)
+    const urlSalud = API_URL ? `${API_URL}/` : '/api/salud';
+    fetch(urlSalud)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<{ servicio: string; estado: string }>;
@@ -305,7 +310,7 @@ export default function ConfiguracionPage() {
               API {estadoApi === 'ok' ? 'conectada' : estadoApi === 'error' ? 'no responde' : 'verificando…'}
             </span>
             <span className="truncate text-xs text-texto-2">
-              {servicioApi ?? API_URL}
+              {servicioApi ?? (API_URL || 'proxy /api → API_URL')}
             </span>
             <Button
               type="button"
