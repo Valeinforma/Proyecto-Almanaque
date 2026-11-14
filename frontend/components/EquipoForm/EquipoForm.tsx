@@ -12,6 +12,7 @@
 // Uso:
 //   <EquipoForm clientes={lista} onGuardar={crear} ... />
 //   <EquipoForm clientes={lista} inicial={equipo} ... />
+//   <EquipoForm clientes={lista} clienteIdInicial={id} ... />
 // ============================================================
 
 import { useState } from 'react';
@@ -24,13 +25,26 @@ import type { IEquipo, IEquipoInput } from '@/interfaces/IEquipo';
 interface EquipoFormProps {
   clientes: ICliente[]; // listado para el Select (lo carga el padre)
   inicial?: IEquipo; // presente → modo edición
+  /**
+   * Cliente preseleccionado en el ALTA (sin `inicial`). Lo usa el
+   * modal "Nuevo equipo" de /ordenes/nueva para no obligar a
+   * volver a elegir al dueño que ya está en la orden.
+   */
+  clienteIdInicial?: number;
   onGuardar: (datos: IEquipoInput) => Promise<void>;
   onCancelar: () => void;
 }
 
-function estadoInicial(inicial?: IEquipo) {
+function estadoInicial(inicial?: IEquipo, clienteIdInicial?: number) {
+  // Edición manda; si no hay `inicial`, el dueño viene por prop.
+  const clienteId = inicial
+    ? String(inicial.clienteId)
+    : clienteIdInicial
+      ? String(clienteIdInicial)
+      : '';
+
   return {
-    clienteId: inicial ? String(inicial.clienteId) : '',
+    clienteId,
     tipo: inicial?.tipo ?? '',
     marca: inicial?.marca ?? '',
     modelo: inicial?.modelo ?? '',
@@ -42,10 +56,11 @@ function estadoInicial(inicial?: IEquipo) {
 export default function EquipoForm({
   clientes,
   inicial,
+  clienteIdInicial,
   onGuardar,
   onCancelar,
 }: EquipoFormProps) {
-  const [campos, setCampos] = useState(() => estadoInicial(inicial));
+  const [campos, setCampos] = useState(() => estadoInicial(inicial, clienteIdInicial));
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [errorBackend, setErrorBackend] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);

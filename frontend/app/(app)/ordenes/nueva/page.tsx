@@ -16,13 +16,23 @@
 // Los DETALLES (servicios/repuestos) no se cargan acá: se
 // agregan desde el detalle de la orden, donde se controla
 // el stock repuesto por repuesto.
+//
+// ALTA RÁPIDA: los selects de Cliente y Equipo llevan al final
+// una opción "+ Nuevo…" que abre un modal con el MISMO form de
+// /clientes/nuevo y /equipos/nuevo (ClienteForm / EquipoForm).
+// Al guardar, el registro creado queda seleccionado en la orden
+// sin salir de la pantalla: los hooks ya agregan el ítem a su
+// propia lista (agregarCliente / agregarEquipo lo devuelven).
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Button from '@/components/Button/Button';
+import ClienteForm from '@/components/ClienteForm/ClienteForm';
+import EquipoForm from '@/components/EquipoForm/EquipoForm';
 import Input from '@/components/Input/Input';
+import Modal from '@/components/Modal/Modal';
 import Select from '@/components/Select/Select';
 import TextArea from '@/components/TextArea/TextArea';
 import useClientesApi from '@/hooks/useClientesApi';
@@ -30,7 +40,14 @@ import useEquiposApi from '@/hooks/useEquiposApi';
 import useUsuariosApi from '@/hooks/useUsuariosApi';
 import useOrdenesApi from '@/hooks/useOrdenesApi';
 import { useSesion } from '@/lib/auth';
+import type { IClienteInput } from '@/interfaces/ICliente';
+import type { IEquipoInput } from '@/interfaces/IEquipo';
 import type { IOrdenInput } from '@/interfaces/IOrden';
+
+// Valores centinela de las opciones de acción de los selects.
+// (No pueden colisionar con un id: los ids son numéricos.)
+const NUEVO_CLIENTE = '__nuevo_cliente__';
+const NUEVO_EQUIPO = '__nuevo_equipo__';
 
 export default function NuevaOrdenPage() {
   const router = useRouter();
@@ -41,11 +58,13 @@ export default function NuevaOrdenPage() {
     clientes,
     cargando: cargandoClientes,
     error: errorClientes,
+    agregarCliente,
   } = useClientesApi();
   const {
     equipos,
     cargando: cargandoEquipos,
     error: errorEquipos,
+    agregarEquipo,
   } = useEquiposApi();
   // Técnicos: solo Admin puede pedir /usuarios → lo cargamos a
   // demanda (autoCargar: false) en el effect de abajo.
@@ -68,6 +87,10 @@ export default function NuevaOrdenPage() {
   const [errorLocal, setErrorLocal] = useState<string | null>(null);
   const [errorBackend, setErrorBackend] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  // Alta rápida: modales de cliente / equipo (opción "+ Nuevo…").
+  const [modalCliente, setModalCliente] = useState(false);
+  const [modalEquipo, setModalEquipo] = useState(false);
 
   // Técnicos solo si es Admin (el GET es Admin-only).
   useEffect(() => {
@@ -98,6 +121,41 @@ export default function NuevaOrdenPage() {
   const equiposDelCliente = equipos.filter(
     (eq) => eq.clienteId === Number(clienteId)
   );
+
+  // Los selects llevan al final una ACCIÓN ("+ Nuevo…"), no un
+  // valor: si la eligen, abrimos el modal y NO tocamos el estado
+  // del id. Ese re-render devuelve el select a la opción previa
+  // (es un controlado: `value` sigue siendo el id anterior).
+  const alCambiarClienteSelect = (valor: string) => {
+    if (valor === NUEVO_CLIENTE) {
+      setModalCliente(true);
+      return;
+    }
+    alCambiarCliente(valor);
+  };
+
+  const alCambiarEquipoSelect = (valor: string) => {
+    if (valor === NUEVO_EQUIPO) {
+      setModalEquipo(true);
+      return;
+    }
+    setEquipoId(valor);
+  };
+
+  // Altas rápidas: si el backend falla, el error sube al form
+  // (ApiError) y el modal queda abierto para corregir.
+  async function crearCliente(datos: IClienteInput) {
+    const nuevo = await agregarCliente(datos);
+    setClienteId(String(nuevo.id)); // queda elegido en la orden
+    setEquipoId(''); // cliente nuevo → otros equipos
+    setModalCliente(false);
+  }
+
+  async function crearEquipo(datos: IEquipoInput) {
+    const nuevo = await agregarEquipo(datos);
+    setEquipoId(String(nuevo.id));
+    setModalEquipo(false);
+  }
 
   async function alEnviar() {
     if (enviando) return;
@@ -171,33 +229,44 @@ export default function NuevaOrdenPage() {
             }}
             className="flex flex-col gap-4"
           >
-            {/* 1) Cliente → 2) equipo en cascada */}
+            {/* 1) Cliente → 2) equipo en cascada.
+                La última opción de cada uno es una ACCIÓN de alta. */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Select
                 label="Cliente *"
                 valor={clienteId}
-                onChange={alCambiarCliente}
+                onChange={alCambiarClienteSelect}
                 placeholder="Elegí un cliente…"
-                opciones={clientes.map((c) => ({
-                  valor: c.id,
-                  texto: `${c.nombre} ${c.apellido}`,
-                }))}
+                opciones={[
+                  ...clientes.map((c) => ({
+                    valor: c.id,
+                    texto: `${c.nombre} ${c.apellido}`,
+                  })),
+                  { valor: NUEVO_CLIENTE, texto: '+ Nuevo cliente…' },
+                ]}
                 disabled={enviando}
               />
               <Select
                 label="Equipo *"
                 valor={equipoId}
-                onChange={setEquipoId}
+                onChange={alCambiarEquipoSelect}
                 placeholder={
-                  clienteId ? 'Elegí un equipo…' : 'Primero elegí el cliente'
+                  !clienteId
+                    ? 'Primero elegí el cliente'
+                    : equiposDelCliente.length === 0
+                      ? 'Sin equipos — creá uno'
+                      : 'Elegí un equipo…'
                 }
                 disabled={!clienteId || enviando}
-                opciones={equiposDelCliente.map((eq) => ({
-                  valor: eq.id,
-                  texto:
-                    [eq.tipo, eq.marca, eq.modelo].filter(Boolean).join(' ') ||
-                    `Equipo #${eq.id}`,
-                }))}
+                opciones={[
+                  ...equiposDelCliente.map((eq) => ({
+                    valor: eq.id,
+                    texto:
+                      [eq.tipo, eq.marca, eq.modelo].filter(Boolean).join(' ') ||
+                      `Equipo #${eq.id}`,
+                  })),
+                  { valor: NUEVO_EQUIPO, texto: '+ Nuevo equipo…' },
+                ]}
               />
             </div>
 
@@ -271,6 +340,33 @@ export default function NuevaOrdenPage() {
           </form>
         )}
       </div>
+
+      {/* Alta rápida: el MISMO form de /clientes/nuevo y /equipos/nuevo.
+          Modal no renderiza nada al estar cerrado → los forms se
+          remontan en cada apertura y toman el cliente vigente. */}
+      <Modal
+        abierto={modalCliente}
+        onCerrar={() => setModalCliente(false)}
+        titulo="Nuevo cliente"
+      >
+        <ClienteForm
+          onGuardar={crearCliente}
+          onCancelar={() => setModalCliente(false)}
+        />
+      </Modal>
+
+      <Modal
+        abierto={modalEquipo}
+        onCerrar={() => setModalEquipo(false)}
+        titulo="Nuevo equipo"
+      >
+        <EquipoForm
+          clientes={clientes}
+          clienteIdInicial={clienteId ? Number(clienteId) : undefined}
+          onGuardar={crearEquipo}
+          onCancelar={() => setModalEquipo(false)}
+        />
+      </Modal>
     </div>
   );
 }
