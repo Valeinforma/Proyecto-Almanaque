@@ -51,34 +51,34 @@ INSERT INTO equipos (id, cliente_id, tipo, marca, modelo, numero_serie, descripc
 -- ------------------------------------------------------------
 -- SERVICIOS
 -- ------------------------------------------------------------
-INSERT INTO servicios (id, nombre, descripcion, precio, activo) VALUES
-(1, 'Diagnóstico general', 'Revisión completa del equipo', 1500, true),
-(2, 'Cambio de pantalla', 'Reemplazo de pantalla completa', 25000, true),
-(3, 'Reemplazo de batería', 'Cambio de batería original o equivalente', 8000, true),
-(4, 'Cambio de módulo de carga', 'Reemplazo del flex y conector de carga', 5500, true),
-(5, 'Instalación de software', 'Formateo e instalación de sistema operativo', 3500, true),
-(6, 'Recuperación de datos', 'Respaldo y recuperación de información', 12000, true),
-(7, 'Limpieza interna', 'Limpieza de polvo y cambio de pasta térmica', 4000, true),
-(8, 'Reparación de placa', 'Reparación de componentes de la placa madre', 18000, true),
-(9, 'Cambio de teclado', 'Reemplazo de teclado integrado', 9500, true),
-(10, 'Actualización de firmware', 'Actualización de software de sistema', 2500, false);
+INSERT INTO servicios (id, nombre, descripcion, precio, activo, imagen_url) VALUES
+(1, 'Diagnóstico general', 'Revisión completa del equipo', 1500, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/servicios/4a79cf01014648b7b0958e6998298bb3.jpg'),
+(2, 'Cambio de pantalla', 'Reemplazo de pantalla completa', 25000, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/d6f6cec20abe45adb32eba2d4eaa4818.jpg'),
+(3, 'Reemplazo de batería', 'Cambio de batería original o equivalente', 8000, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/3c4d7656b81b4b0db28b8ec02e8ab163.jpg'),
+(4, 'Cambio de módulo de carga', 'Reemplazo del flex y conector de carga', 5500, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/bcb821406a424be7873a08f94df09b6f.jpg'),
+(5, 'Instalación de software', 'Formateo e instalación de sistema operativo', 3500, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/servicios/96c74caed597400dba54e4e443d52c2a.jpg'),
+(6, 'Recuperación de datos', 'Respaldo y recuperación de información', 12000, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/servicios/5e1a6fbdf7cc4e8b922bde2e2bcc3937.jpg'),
+(7, 'Limpieza interna', 'Limpieza de polvo y cambio de pasta térmica', 4000, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/eeb76e67949449a9ba5388ca3dc36d95.jpg'),
+(8, 'Reparación de placa', 'Reparación de componentes de la placa madre', 18000, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/fbc74d4438b4494e95efdbd54751ade6.jpg'),
+(9, 'Cambio de teclado', 'Reemplazo de teclado integrado', 9500, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/servicios/f1d01ff0a83e462a8dbee81197275eaa.jpg'),
+(10, 'Actualización de firmware', 'Actualización de software de sistema', 2500, false, NULL);
 
 -- ------------------------------------------------------------
 -- REPUESTOS
 -- ------------------------------------------------------------
-INSERT INTO repuestos (id, nombre, descripcion, precio, stock, activo) VALUES
-(1, 'Pantalla LCD Galaxy A54', 'Pantalla original Samsung', 14000, 5, true),
-(2, 'Batería iPhone 11', 'Batería de reemplazo certificada', 9500, 4, true),
-(3, 'Cable de carga USB-C', 'Cable reforzado 1m', 1500, 25, true),
-(4, 'Flex de carga Galaxy S21', 'Flex conector de carga', 3800, 8, true),
-(5, 'Teclado notebook Dell', 'Teclado español', 7200, 3, true),
-(6, 'Disco SSD 240GB', 'SSD SATA 240GB', 8900, 6, true),
-(7, 'Memoria RAM 8GB DDR4', 'Módulo DDR4 3200MHz', 11000, 5, true),
-(8, 'Placa madre Lenovo', 'Placa de repuesto', 45000, 1, true),
-(9, 'Módulo WiFi HP', 'Tarjeta WiFi + Bluetooth', 6500, 2, true),
-(10, 'Lector de tarjeta SD', 'Lector integrado', 2200, 10, true),
-(11, 'Cooler notebook', 'Ventilador de repuesto', 3300, 7, true),
-(12, 'Webcam HD USB', 'Cámara externa 1080p', 4800, 9, true);
+INSERT INTO repuestos (id, nombre, descripcion, precio, stock, activo, imagen_url) VALUES
+(1, 'Pantalla LCD Galaxy A54', 'Pantalla original Samsung', 14000, 5, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/d6f6cec20abe45adb32eba2d4eaa4818.jpg'),
+(2, 'Batería iPhone 11', 'Batería de reemplazo certificada', 9500, 4, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/3c4d7656b81b4b0db28b8ec02e8ab163.jpg'),
+(3, 'Cable de carga USB-C', 'Cable reforzado 1m', 1500, 25, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/bcb821406a424be7873a08f94df09b6f.jpg'),
+(4, 'Flex de carga Galaxy S21', 'Flex conector de carga', 3800, 8, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/d3039255d62e4a4da5bdb8789a710cd8.jpg'),
+(5, 'Teclado notebook Dell', 'Teclado español', 7200, 3, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/c77e940611bc46db989ee3b5e6ea9041.jpg'),
+(6, 'Disco SSD 240GB', 'SSD SATA 240GB', 8900, 6, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/fb0018d99cdd4b4ea01a4d02295cbc1e.jpg'),
+(7, 'Memoria RAM 8GB DDR4', 'Módulo DDR4 3200MHz', 11000, 5, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/dd903de72fa147f28e6bcd863dc3b0e5.jpg'),
+(8, 'Placa madre Lenovo', 'Placa de repuesto', 45000, 1, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/fbc74d4438b4494e95efdbd54751ade6.jpg'),
+(9, 'Módulo WiFi HP', 'Tarjeta WiFi + Bluetooth', 6500, 2, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/54d64fd106ae4ae7845d6189fde174ee.jpg'),
+(10, 'Lector de tarjeta SD', 'Lector integrado', 2200, 10, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/9e8de0b2cda74e52a1a397d84afdaa74.jpg'),
+(11, 'Cooler notebook', 'Ventilador de repuesto', 3300, 7, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/eeb76e67949449a9ba5388ca3dc36d95.jpg'),
+(12, 'Webcam HD USB', 'Cámara externa 1080p', 4800, 9, true, 'https://htvbibkiuruugelayepw.supabase.co/storage/v1/object/public/StorageFix/imagenes/repuestos/835c2875a20745feaf32fd554d82915b.jpg');
 
 -- ------------------------------------------------------------
 -- ORDENES DE SERVICIO
