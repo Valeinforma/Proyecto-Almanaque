@@ -2,10 +2,12 @@
 
 ## Repository Structure
 
-TechFix Manager — workspace con la API del backend y su documentación. No hay frontend en el workspace todavía.
+TechFix Manager — workspace con la API del backend, el frontend Next.js y la configuración de Supabase.
 
 - `Backend/` — ASP.NET Core 10 Web API + EF Core (Npgsql/PostgreSQL), controllers, auth por headers
-- `docs/` — documentación del proyecto: `ROOM_MAP_TechFix_Manager.txt`, `SDD_TechFix_Manager.txt`, `TDD_TechFix_Manager.txt`
+- `frontend/` — Next.js 16 (App Router, TypeScript, Tailwind 4), cliente del sistema y vitrina pública
+- `supabase/` — configuración del CLI y migraciones de infraestructura (bucket de Storage para imágenes)
+- `docs/` — documentación del proyecto: `ROOM_MAP_TechFix_Manager.txt`, `SDD_TechFix_Manager.txt`, `TDD_TechFix_Manager.txt`, `GUIA_SISTEMA_TechFix_Manager.md`, `ARQUITECTURA_FRONTEND.html`
 - `.vscode/mcp.json` — MCP servers (el server `postgres` apunta a `techfix_db`)
 
 ## Backend (Backend/)
@@ -18,6 +20,7 @@ dotnet run          # starts on http://localhost:5137
 dotnet build        # compile only
 dotnet ef migrations add <Nombre>   # crear migración
 dotnet ef database update           # aplicar migraciones
+dotnet ef migrations list           # ver migraciones aplicadas/pendientes
 ```
 
 Seed de datos (PostgreSQL, re-ejecutable):
@@ -30,13 +33,13 @@ Swagger UI disponible en `/swagger` (Development).
 
 ### Architecture
 
-- **Controllers** (9): `AuthController`, `ClientesController`, `EquiposController`, `OrdenesController`, `ServiciosController`, `RepuestosController`, `UsuariosController`, `DashboardController`, `CatalogoPublicoController`
+- **Controllers** (10): `AuthController`, `ClientesController`, `EquiposController`, `OrdenesController`, `ServiciosController`, `RepuestosController`, `UsuariosController`, `DashboardController`, `CatalogoPublicoController`, `ArchivoController`
 - `Models/` — 10 archivos: `Usuario`, `Cliente`, `Equipo`, `OrdenServicio`, `Servicio`, `Repuesto`, `OrdenDetalle`, `OrdenRepuestoDetalle`, `EstadoOrden` (enum), `Roles` (constantes)
 - `Dtos/` — 7 archivos: Auth, Cliente, Equipo, Orden, Catalogo, Usuario, Dashboard
-- `Services/` — `AuthService` (login + BCrypt), `HeaderAuthenticationHandler` (autenticación por header)
+- `Services/` — `AuthService` (login + BCrypt), `HeaderAuthenticationHandler` (autenticación por header), `SupabaseStorageService` (subida de imágenes)
 - `Data/AppDbContext.cs` — 8 DbSets, precisiones decimales y relaciones
 - `Migrations/` — esquema generado por EF Core
-- `Program.cs` — DI, CORS, esquema de autenticación HeaderAuth, Swagger
+- `Program.cs` — DI, CORS, esquema de autenticación HeaderAuth, Swagger, HttpClient de Supabase
 
 ### Database
 
@@ -85,12 +88,48 @@ Swagger UI disponible en `/swagger` (Development).
 - `NumeroOrden` se autogenera consecutivo con formato `ORD-000001`
 - Los enums se envían/reciben como texto JSON (ej. `"Presupuestado"`), gracias a `JsonStringEnumConverter`
 
+## Frontend (frontend/)
+
+Next.js 16.3.6 (App Router, Turbopack) + React 19 + TypeScript + Tailwind CSS 4. Gestor de paquetes: **pnpm**.
+
+### Commands
+
+```bash
+cd frontend
+pnpm install        # dependencias
+pnpm dev            # http://localhost:3000
+pnpm build          # build de producción (incluye type-check)
+pnpm lint           # ESLint (debe quedar sin errores)
+pnpm smoke          # smoke test de la capa de datos contra la API real
+```
+
+`pnpm smoke` necesita el backend corriendo en `http://localhost:5137` (si no se define
+`NEXT_PUBLIC_API_URL`, el script usa ese fallback).
+
+### Architecture
+
+- `app/(app)/` — pantallas protegidas: dashboard, órdenes, clientes, equipos, servicios, repuestos, usuarios, configuración
+- `app/(publico)/` — landing `/` y tienda `/tienda` (catálogo sin sesión)
+- `app/login`, `app/registro` — autenticación pública
+- `app/api/[...ruta]/route.ts` — **proxy** que reenvía `/api/*` al backend usando `API_URL` (variable solo del servidor; por defecto `http://localhost:5137`)
+- `app/api/salud/route.ts` — ping al health del backend para la pantalla de Configuración
+- `components/` — UI por feature (formularios, tablas, modales, `CampoImagen`, etc.)
+- `lib/api.ts` — cliente HTTP central: agrega `X-Usuario-Id`, parsea `{ mensaje }` y borra la sesión ante 401
+- `lib/auth.ts` — login/logout y sesión en `localStorage` (`techfix_sesion`)
+- `interfaces/`, `types/`, `hooks/` — contratos y hooks compartidos
+
+### Environment
+
+- Local: `.env.local` sin `NEXT_PUBLIC_API_URL` → el navegador llama rutas relativas `/api/...` y el proxy de Next las reenvía a `API_URL` (por defecto `http://localhost:5137`). No hay CORS.
+- Opcional (modo directo): definir `NEXT_PUBLIC_API_URL` hace que el navegador llame al backend sin proxy; requiere CORS en el backend.
+- Producción (Render): definir `API_URL` en el servidor del frontend apuntando a la URL pública del backend, sin `/api` ni barra final.
+
 ### Gotchas
 
-- El frontend no existe en el workspace (la carpeta `FrontendElectronica/` fue eliminada); la API no tiene clientes HTTP que la consuman todavía
-- CORS permite `http://localhost:5173` (Vite) y `http://localhost:3000` (Next.js)
-- No hay infraestructura de tests ni CI/CD
+- CORS del backend permite `http://localhost:5173` (Vite), `http://localhost:3000`, `http://localhost:3001` (puerto estable local) y `https://proyecto-almanaque.onrender.com`
 - Sin migraciones de datos desde MySQL: los datos viejos se reemplazaron con `seed.sql`
+- El backend corre en HTTP en desarrollo; no hay HTTPS local configurado para el front
+- No hay CI/CD ni framework de tests formal; la validación es `pnpm build` + `pnpm lint` + `pnpm smoke`
 
 ### Code style
 
@@ -102,8 +141,11 @@ Swagger UI disponible en `/swagger` (Development).
 
 - Backend: `http://localhost:5137` (HTTP)
 - Swagger: `http://localhost:5137/swagger`
+- Frontend: `http://localhost:3000`
 - PostgreSQL: `localhost:5432`, usuario `postgres`, password `postgres`, base `techfix_db`
+- Supabase Storage: bucket público `StorageFix` (imágenes del catálogo)
 
-## No test infrastructure
+## Build / tooling notes
 
-There are no test frameworks, test scripts, or test files. No CI/CD pipelines.
+- `Backend/Backend.csproj` define `AllowMissingPrunePackageData=true` para evitar `NETSDK1226` con el SDK 10.0.401 local.
+- El backend se publica con `Backend/Dockerfile` (imagen `sdk:10.0` → `aspnet:10.0`, escucha en el puerto 10000).
