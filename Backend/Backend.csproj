@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- SDK 10.0.401 de esta máquina no trae los datos de prune del
+         targeting pack y `dotnet build` falla con NETSDK1226. El flag
+         es la omisión documentada y no afecta el binario generado. -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
 
   <ItemGroup>

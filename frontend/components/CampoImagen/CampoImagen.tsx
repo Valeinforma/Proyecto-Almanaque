@@ -21,8 +21,6 @@ const TAMANIO_MAXIMO = 5 * 1024 * 1024; // 5 MB (lo mismo que el backend)
 
 interface CampoImagenProps {
   label?: string;
-  // Archivo elegido (null = no hay archivo nuevo).
-  archivo: File | null;
   // URL ya guardada (para mostrar preview al editar / quitar).
   urlActual: string | null;
   // Se dispara con el archivo nuevo, o null si se quitó.
@@ -34,7 +32,6 @@ interface CampoImagenProps {
 
 export default function CampoImagen({
   label = 'Foto del producto',
-  archivo,
   urlActual,
   onCambio,
   onQuitarGuardada,

@@ -141,7 +141,6 @@ export default function RepuestoForm({ inicial, onGuardar, onCancelar }: Repuest
 
       <CampoImagen
         label="Foto del repuesto"
-        archivo={archivo}
         urlActual={imagenUrl}
         onCambio={setArchivo}
         onQuitarGuardada={() => setImagenUrl(null)}

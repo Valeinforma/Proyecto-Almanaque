@@ -28,6 +28,13 @@ const almacen = new Map<string, string>();
 
 let fallos = 0;
 
+// tsx NO carga .env.local (eso lo hace Next). Sin esta variable,
+// lib/api.ts usa rutas relativas y fetch falla en Node con
+// "Failed to parse URL". Usamos el mismo fallback que el proxy:
+// la API local en 5137. Se define ANTES de importar lib/ porque
+// API_URL se calcula al evaluar el módulo.
+process.env.NEXT_PUBLIC_API_URL ??= 'http://localhost:5137';
+
 function check(nombre: string, ok: boolean, detalle?: string): void {
   console.log(`${ok ? 'OK  ' : 'FAIL'} - ${nombre}${detalle ? ` (${detalle})` : ''}`);
   if (!ok) fallos++;

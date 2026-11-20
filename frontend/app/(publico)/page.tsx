@@ -21,7 +21,7 @@
 // sistema).
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import HeaderPublico from '@/components/HeaderPublico/HeaderPublico';
 import Hero from '@/components/Hero/Hero';
@@ -49,30 +49,46 @@ export default function InicioPage() {
     if (haySesion()) router.replace('/dashboard');
   }, [router]);
 
-  // Carga del catálogo público (reutilizable para el botón
-  // "Reintentar" de ErrorCarga).
-  const cargarCatalogo = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      const datos = await api.get<ICatalogoPublico>('/publico/catalogo');
-      setCatalogo(datos);
-    } catch (err) {
-      // ApiError trae el mensaje del backend; otros errores
-      // (API caída) → mensaje genérico, igual que el login.
-      setError(
-        err instanceof ApiError || err instanceof Error
-          ? err.message
-          : 'No se pudo conectar con el servidor.'
-      );
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  // Carga del catálogo público.
+  // `intento` es la dependencia del efecto: el botón "Reintentar" la
+  // incrementa para volver a ejecutarlo (así el fetch no se dispara
+  // desde un handler y el estado nunca se toca sincrónicamente
+  // dentro del efecto).
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    void cargarCatalogo();
-  }, [cargarCatalogo]);
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const datos = await api.get<ICatalogoPublico>('/publico/catalogo');
+        if (cancelado) return;
+        setCatalogo(datos);
+        setError(null);
+      } catch (err) {
+        if (cancelado) return;
+        // ApiError trae el mensaje del backend; otros errores
+        // (API caída) → mensaje genérico, igual que el login.
+        setError(
+          err instanceof ApiError || err instanceof Error
+            ? err.message
+            : 'No se pudo conectar con el servidor.'
+        );
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [intento]);
+
+  function reintentar() {
+    setCargando(true);
+    setError(null);
+    setIntento((n) => n + 1);
+  }
 
   return (
     <div className="min-h-screen bg-fondo">
@@ -89,7 +105,7 @@ export default function InicioPage() {
             <ErrorCarga
               mensaje="No se pudieron cargar los servicios y repuestos."
               error={error}
-              onReintentar={() => void cargarCatalogo()}
+              onReintentar={reintentar}
             />
           </div>
         )}

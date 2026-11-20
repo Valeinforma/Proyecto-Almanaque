@@ -15,6 +15,7 @@
 // lo trae, así el type-narrowing de TS queda explícito.
 // ============================================================
 
+import Link from 'next/link';
 import Modal from '@/components/Modal/Modal';
 import { Package, Wrench, MapPin, ArrowRight } from 'lucide-react';
 import type { IRepuestoPublico, IServicioPublico } from '@/interfaces/IPublico';
@@ -122,14 +123,14 @@ export default function DetalleItem({ item, onCerrar }: DetalleItemProps) {
 
       {/* CTA: el footer público tiene el ancla #contacto con
           dirección y teléfono (compartido por landing y tienda). */}
-      <a
+      <Link
         href="/#contacto"
         onClick={onCerrar}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primario px-4 py-2.5 text-sm font-semibold text-fondo transition-opacity hover:opacity-90"
       >
         Consultar por este {esRepuesto ? 'repuesto' : 'servicio'}
         <ArrowRight className="size-4" />
-      </a>
+      </Link>
     </Modal>
   );
 }

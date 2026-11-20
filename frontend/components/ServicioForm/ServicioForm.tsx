@@ -137,7 +137,6 @@ export default function ServicioForm({ inicial, onGuardar, onCancelar }: Servici
       {puedeSubirFoto && (
         <CampoImagen
           label="Foto del servicio"
-          archivo={archivo}
           urlActual={imagenUrl}
           onCambio={setArchivo}
           onQuitarGuardada={() => setImagenUrl(null)}

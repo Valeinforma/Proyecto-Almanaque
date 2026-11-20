@@ -16,7 +16,7 @@
 // los datos siempre son los de la DB, nunca hardcodeados.
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Store, Search } from 'lucide-react';
 import HeaderPublico from '@/components/HeaderPublico/HeaderPublico';
 import FooterPublico from '@/components/FooterPublico/FooterPublico';
@@ -33,26 +33,42 @@ export default function TiendaPage() {
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
 
-  const cargarCatalogo = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      const datos = await api.get<ICatalogoPublico>('/publico/catalogo');
-      setCatalogo(datos);
-    } catch (err) {
-      setError(
-        err instanceof ApiError || err instanceof Error
-          ? err.message
-          : 'No se pudo conectar con el servidor.'
-      );
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  // Ver comentario equivalente en app/(publico)/page.tsx: el efecto
+  // se reejecuta cambiando `intento` (botón "Reintentar") y nunca
+  // actualiza estado de forma sincrónica dentro del propio efecto.
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    void cargarCatalogo();
-  }, [cargarCatalogo]);
+    let cancelado = false;
+
+    (async () => {
+      try {
+        const datos = await api.get<ICatalogoPublico>('/publico/catalogo');
+        if (cancelado) return;
+        setCatalogo(datos);
+        setError(null);
+      } catch (err) {
+        if (cancelado) return;
+        setError(
+          err instanceof ApiError || err instanceof Error
+            ? err.message
+            : 'No se pudo conectar con el servidor.'
+        );
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [intento]);
+
+  function reintentar() {
+    setCargando(true);
+    setError(null);
+    setIntento((n) => n + 1);
+  }
 
   // Filtro de texto sobre repuestos (nombre + descripción).
   // useMemo evita re-filtrar en cada render que no cambie la lista.
@@ -116,7 +132,7 @@ export default function TiendaPage() {
             <ErrorCarga
               mensaje="No se pudo cargar la tienda."
               error={error}
-              onReintentar={() => void cargarCatalogo()}
+              onReintentar={reintentar}
             />
           )}
 
