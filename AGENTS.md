@@ -144,6 +144,7 @@ pnpm smoke          # smoke test de la capa de datos contra la API real
 
 ## Dev Environment
 
+- **Resend MCP**: configurado en `.opencode/opencode.json` (versionable, sin secretos). El token se lee de `~/.config/opencode/resend.key` (fuera del repo, 36 bytes, sin salto de línea) mediante `{file:~/.config/opencode/resend.key}`; el process env no funciona porque OpenCode conserva el environment block con el que arrancó. Se conecta con `oauth: false` + header `Authorization: Bearer ...`. El key actual es de **solo envío**: sirve para `Email__ApiKey` del backend, pero las tools de administración (dominios, usage) devuelven `restricted_api_key`. Para enviar correos hay que pasar `from` explícitamente (ej. `TechFix <onboarding@resend.dev>`).
 - Backend: `http://localhost:5137` (HTTP)
 - Swagger: `http://localhost:5137/swagger`
 - Frontend: `http://localhost:3000`
