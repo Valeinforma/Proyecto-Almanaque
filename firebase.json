@@ -1,0 +1,14 @@
+{
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "TechFix Manager",
+        "supportEmail": "valentino.machado108@gmail.com",
+        "authorizedRedirectUris": [
+          "http://localhost:3000",
+          "https://proyecto-almanaque.onrender.com"
+        ]
+      }
+    }
+  }
+}

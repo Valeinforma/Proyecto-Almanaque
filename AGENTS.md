@@ -7,6 +7,7 @@ TechFix Manager — workspace con la API del backend, el frontend Next.js y la c
 - `Backend/` — ASP.NET Core 10 Web API + EF Core (Npgsql/PostgreSQL), controllers, auth por headers
 - `frontend/` — Next.js 16 (App Router, TypeScript, Tailwind 4), cliente del sistema y vitrina pública
 - `supabase/` — configuración del CLI y migraciones de infraestructura (bucket de Storage para imágenes)
+- `firebase.json` / `.firebaserc` — configuración de Firebase Auth como código (proveedor Google); se aplica con `npx firebase-tools deploy --only auth`
 - `docs/` — documentación del proyecto: `ROOM_MAP_TechFix_Manager.txt`, `SDD_TechFix_Manager.txt`, `TDD_TechFix_Manager.txt`, `GUIA_SISTEMA_TechFix_Manager.md`, `ARQUITECTURA_FRONTEND.html`
 - `.vscode/mcp.json` — MCP servers (el server `postgres` apunta a `techfix_db`)
 
@@ -34,12 +35,12 @@ Swagger UI disponible en `/swagger` (Development).
 ### Architecture
 
 - **Controllers** (10): `AuthController`, `ClientesController`, `EquiposController`, `OrdenesController`, `ServiciosController`, `RepuestosController`, `UsuariosController`, `DashboardController`, `CatalogoPublicoController`, `ArchivoController`
-- `Models/` — 10 archivos: `Usuario`, `Cliente`, `Equipo`, `OrdenServicio`, `Servicio`, `Repuesto`, `OrdenDetalle`, `OrdenRepuestoDetalle`, `EstadoOrden` (enum), `Roles` (constantes)
+- `Models/` — 11 archivos: `Usuario`, `Cliente`, `Equipo`, `OrdenServicio`, `Servicio`, `Repuesto`, `OrdenDetalle`, `OrdenRepuestoDetalle`, `PasswordResetToken`, `EstadoOrden` (enum), `Roles` (constantes)
 - `Dtos/` — 7 archivos: Auth, Cliente, Equipo, Orden, Catalogo, Usuario, Dashboard
-- `Services/` — `AuthService` (login + BCrypt), `HeaderAuthenticationHandler` (autenticación por header), `SupabaseStorageService` (subida de imágenes)
-- `Data/AppDbContext.cs` — 8 DbSets, precisiones decimales y relaciones
+- `Services/` — `AuthService` (login + BCrypt + tokens de recuperación), `FirebaseAuthService` (verificación de ID tokens de Google), `EmailSender`/`ResendEmailSender` (envío del link de recuperación), `HeaderAuthenticationHandler` (autenticación por header), `SupabaseStorageService` (subida de imágenes)
+- `Data/AppDbContext.cs` — 9 DbSets, precisiones decimales y relaciones
 - `Migrations/` — esquema generado por EF Core
-- `Program.cs` — DI, CORS, esquema de autenticación HeaderAuth, Swagger, HttpClient de Supabase
+- `Program.cs` — DI, CORS, esquema de autenticación HeaderAuth, Swagger, HttpClient de Supabase/Firebase/Resend
 
 ### Database
 
@@ -59,12 +60,14 @@ Swagger UI disponible en `/swagger` (Development).
 - Roles: `Admin`, `Tecnico`, `Recepcion`
 - Usuarios seed: `admin@techfix.com`/`admin123` (Admin), `tecnico@techfix.com`/`tecnico123` (Tecnico), `recepcion@techfix.com`/`recepcion123` (Recepcion)
 - Contraseñas: hash BCrypt (nunca texto plano en la DB)
+- **Login con Google (Firebase)**: el frontend abre el popup con `signInWithPopup`, obtiene el ID token y lo manda a `POST /api/auth/google`. El backend lo verifica con `FirebaseAuthService` contra Identity Toolkit usando `Firebase:ApiKey` (API key web pública, sin service account), exige `emailVerified` y proveedor `google.com`, y busca/crea el usuario en la DB. Si el email no existe se crea con rol **Recepcion** (igual que `/registro`); si existe pero está inactivo → 403. La sesión devuelta es el mismo `{ id, nombre, email, rol }`. Proyecto Firebase: **`techfix-manager-4730`** (Google habilitado). La config del proveedor vive en `firebase.json`; para reaplicarla: `npx firebase-tools deploy --only auth`.
+- **Recuperar contraseña**: `POST /api/auth/recuperar` genera un token de un solo uso (expira en 1 h, se guarda solo su SHA-256 en `password_reset_tokens`) y manda el link `${Email:FrontendUrl}/restablecer?token=...` por Resend. Responde **siempre** el mismo mensaje genérico (no filtra qué emails existen). `POST /api/auth/restablecer` canjea el token por una contraseña nueva (BCrypt) y lo marca usado. Sin `Email:ApiKey` (desarrollo) el link se escribe en el log del backend.
 
 ### API groups (`/api/*`)
 
 | Grupo | Rutas | Roles con acceso |
 |-------|-------|------------------|
-| Auth | POST `/api/auth/login` (público), POST `/api/auth/registro` (público), GET `/api/auth/me` | cualquiera autenticado |
+| Auth | POST `/api/auth/login` (público), POST `/api/auth/registro` (público), POST `/api/auth/google` (público, ID token de Firebase), POST `/api/auth/recuperar` (público), POST `/api/auth/restablecer` (público), GET `/api/auth/me` | cualquiera autenticado |
 | Clientes | GET/POST/PUT/DELETE `/api/clientes` | Admin, Tecnico, Recepcion |
 | Equipos | GET/POST/PUT/DELETE `/api/equipos` | Admin, Tecnico, Recepcion |
 | Órdenes | GET/POST/PUT/DELETE `/api/ordenes`, PUT `/api/ordenes/{id}/estado` | Admin, Tecnico, Recepcion |
@@ -123,6 +126,8 @@ pnpm smoke          # smoke test de la capa de datos contra la API real
 - Local: `.env.local` sin `NEXT_PUBLIC_API_URL` → el navegador llama rutas relativas `/api/...` y el proxy de Next las reenvía a `API_URL` (por defecto `http://localhost:5137`). No hay CORS.
 - Opcional (modo directo): definir `NEXT_PUBLIC_API_URL` hace que el navegador llame al backend sin proxy; requiere CORS en el backend.
 - Producción (Render): definir `API_URL` en el servidor del frontend apuntando a la URL pública del backend, sin `/api` ni barra final.
+- **Firebase (Google)**: definir `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` y `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`. Son claves públicas (viajan al navegador). Sin ellas la app compila y el botón de Google se muestra deshabilitado. En Firebase → Authentication → Settings → Dominios autorizados hay que agregar el dominio del frontend (`localhost` ya viene; en Render, `proyecto-almanaque.onrender.com`). Valores del proyecto `techfix-manager-4730` en `frontend/.env.local` (local) y en las variables de Render (producción).
+- **Backend (Google + email)**: `Firebase:ApiKey` (la misma API key web), `Email:ApiKey` (Resend), `Email:From` (remitente verificado) y `Email:FrontendUrl` (URL pública del frontend para armar el link de recuperación). En producción se pasan como variables de entorno (`Firebase__ApiKey`, `Email__ApiKey`, etc.).
 
 ### Gotchas
 

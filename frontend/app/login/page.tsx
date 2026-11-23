@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, Wrench, LogIn, Store, UserPlus } from 'lucide-react';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
+import BotonGoogle from '@/components/BotonGoogle/BotonGoogle';
 import { iniciarSesion, haySesion } from '@/lib/auth';
 
 export default function LoginPage() {
@@ -125,7 +126,19 @@ export default function LoginPage() {
             Ingresá con tu cuenta del taller.
           </p>
 
-          <form onSubmit={alEnviar} className="mt-8 flex flex-col gap-4">
+          {/* Login con Google (Firebase). Si el email no existe en el
+              sistema, el backend crea la cuenta con rol Recepcion. */}
+          <div className="mt-8">
+            <BotonGoogle onError={setError} />
+          </div>
+
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-texto-2">o ingresá con tu email</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <form onSubmit={alEnviar} className="flex flex-col gap-4">
             <Input
               label="Email"
               type="email"
@@ -154,6 +167,16 @@ export default function LoginPage() {
               >
                 {verClave ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
+            </div>
+
+            {/* Recuperación de contraseña por email. */}
+            <div className="flex justify-end">
+              <Link
+                href="/recuperar"
+                className="text-xs text-primario transition-colors hover:text-sky-300"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
 
             {/* Mensaje de error (credenciales o conexión). */}

@@ -21,6 +21,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { api, guardarSesion, borrarSesion, CLAVE_SESION } from './api';
+import { obtenerAuth } from './firebase';
 import type { ISesionUsuario } from '@/interfaces/IUsuario';
 import type { Rol } from '@/types/roles';
 
@@ -68,6 +69,95 @@ export async function registrarse(
 
   guardarSesion(sesion);
   return sesion;
+}
+
+// ---------- Google (Firebase) ----------
+// Abre el popup de Google, obtiene el ID token y lo canjea en el
+// backend por la sesión del sistema ({ id, nombre, email, rol }).
+// El backend verifica el token: acá no se manda ningún email a mano.
+export async function iniciarSesionConGoogle(): Promise<ISesionUsuario> {
+  const auth = await obtenerAuth();
+
+  if (!auth) {
+    throw new Error(
+      'El inicio de sesión con Google no está configurado en este entorno.'
+    );
+  }
+
+  const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
+
+  const credencial = await signInWithPopup(auth, new GoogleAuthProvider());
+  const idToken = await credencial.user.getIdToken();
+
+  const sesion = await api.post<ISesionUsuario>('/auth/google', { idToken });
+
+  if (!sesion || typeof sesion.id !== 'number') {
+    throw new Error('Respuesta de login inválida');
+  }
+
+  guardarSesion(sesion);
+  return sesion;
+}
+
+// El usuario cerró el popup a propósito: no hay que mostrar error.
+export function esCancelacionDePopup(error: unknown): boolean {
+  const codigo = (error as { code?: string } | null)?.code;
+
+  return (
+    codigo === 'auth/popup-closed-by-user' ||
+    codigo === 'auth/cancelled-popup-request'
+  );
+}
+
+// Traduce los códigos de Firebase a mensajes accionables en español
+// (los de la API ya vienen con { mensaje } del backend).
+export function mensajeDeErrorGoogle(error: unknown): string {
+  const codigo = (error as { code?: string } | null)?.code;
+
+  switch (codigo) {
+    case 'auth/unauthorized-domain':
+      return 'Este dominio no está autorizado en Firebase. Agregalo en Authentication → Settings → Dominios autorizados.';
+    case 'auth/operation-not-allowed':
+      return 'El proveedor de Google no está habilitado en Firebase (Authentication → Sign-in method).';
+    case 'auth/popup-blocked':
+      return 'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes e intentá de nuevo.';
+    case 'auth/network-request-failed':
+      return 'No se pudo conectar con Google. Revisá tu conexión a internet.';
+    case 'auth/invalid-api-key':
+      return 'La configuración de Firebase no es válida (revisá NEXT_PUBLIC_FIREBASE_API_KEY).';
+    default:
+      return error instanceof Error && error.message
+        ? error.message
+        : 'No se pudo iniciar sesión con Google.';
+  }
+}
+
+// ---------- recuperar contraseña ----------
+// POST /api/auth/recuperar → el backend responde SIEMPRE un mensaje
+// genérico (exista o no el email) para no filtrar cuentas.
+export async function solicitarRecuperacion(email: string): Promise<string> {
+  const respuesta = await api.post<{ mensaje?: string }>('/auth/recuperar', {
+    email,
+  });
+
+  return (
+    respuesta?.mensaje ??
+    'Si el email pertenece a una cuenta activa, te enviamos un enlace.'
+  );
+}
+
+// POST /api/auth/restablecer → canjea el token del email por la
+// contraseña nueva. ApiError(400) si el token venció o ya se usó.
+export async function restablecerPassword(
+  token: string,
+  password: string
+): Promise<string> {
+  const respuesta = await api.post<{ mensaje?: string }>('/auth/restablecer', {
+    token,
+    password,
+  });
+
+  return respuesta?.mensaje ?? 'Contraseña actualizada.';
 }
 
 // ---------- lectura con caché ----------

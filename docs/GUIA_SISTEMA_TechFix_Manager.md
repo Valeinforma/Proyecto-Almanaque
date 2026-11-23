@@ -191,11 +191,36 @@ Un usuario que mande un id ajeno se hace pasar por ese usuario (eso es
 lo débil de este diseño, aceptado para uso local), pero **no puede
 inventarse un rol**: si la DB dice que es Recepción, es Recepción.
 
+**Login con Google (Firebase).** El botón de Google del login/registro
+abre el popup de Firebase, obtiene el **ID token** y lo manda a
+`POST /api/auth/google`. El backend lo verifica contra Google Identity
+Toolkit con la API key web (`Firebase:ApiKey`, pública) y exige email
+verificado + proveedor `google.com`. Nunca se confía en un email
+enviado por el cliente. Si el email no existe se crea la cuenta con rol
+**Recepción** (mismo criterio que `/registro`); si existe, entra con su
+rol real; si está inactiva, 403. La respuesta es el mismo
+`{ id, nombre, email, rol }` de siempre, así que el resto del sistema
+no cambia.
+
+> Proyecto Firebase: `techfix-manager-4730`. El proveedor Google está
+> habilitado y la configuración vive en `firebase.json`; se reaplica con
+> `npx firebase-tools deploy --only auth`. Los dominios autorizados
+> incluyen `localhost` y `proyecto-almanaque.onrender.com`.
+
+**Recuperar contraseña.** `POST /api/auth/recuperar` genera un token
+aleatorio de un solo uso (vence en 1 h; en la DB se guarda solo su
+SHA-256) y manda por Resend el link
+`${Email:FrontendUrl}/restablecer?token=...`. La respuesta es siempre
+genérica para no revelar qué emails existen. `POST /api/auth/restablecer`
+canjea el token por una contraseña nueva (BCrypt) y lo marca usado.
+En desarrollo, sin `Email:ApiKey`, el link se escribe en el log del
+backend.
+
 ### 3.4 Endpoints y roles
 
 | Grupo | Rutas | Quién |
 |---|---|---|
-| Auth | POST `/api/auth/login`, GET `/api/auth/login` → GET `/api/auth/me` | público / cualquiera autenticado |
+| Auth | POST `/api/auth/login`, POST `/api/auth/registro`, POST `/api/auth/google`, POST `/api/auth/recuperar`, POST `/api/auth/restablecer` (públicos) · GET `/api/auth/me` | público / cualquiera autenticado |
 | Clientes | GET/POST/PUT/DELETE `/api/clientes` | Admin, Técnico, Recepción |
 | Equipos | GET/POST/PUT/DELETE `/api/equipos` | Admin, Técnico, Recepción |
 | Órdenes | GET/POST/PUT/DELETE `/api/ordenes`, PUT `/api/ordenes/{id}/estado` | Admin, Técnico, Recepción |
@@ -418,6 +443,14 @@ se toca **un solo archivo** (`lib/api.ts`), no 20 pantallas.
   (regla SDD §11)
 - El **rol** vive en la misma sesión y sirve para mostrar/ocultar
   botones; el que manda es el backend (§3.3)
+- **Google**: `iniciarSesionConGoogle()` (lib/auth.ts) hace
+  `signInWithPopup` → `getIdToken()` → `POST /auth/google` → guarda la
+  misma sesión. El SDK de Firebase se importa dinámicamente (no pesa en
+  el bundle inicial) y el botón avisa si faltan las variables
+  `NEXT_PUBLIC_FIREBASE_*`.
+- **Recuperación**: `/recuperar` pide el email y `/restablecer?token=...`
+  define la nueva contraseña. Las funciones están en `lib/auth.ts`
+  (`solicitarRecuperacion`, `restablecerPassword`).
 
 ### 5.4 `types/index.ts`: el espejo
 

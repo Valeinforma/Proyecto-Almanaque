@@ -34,6 +34,20 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<AuthService>();
 
+// Verificación de ID tokens de Firebase (login con Google) y envío
+// de emails de recuperación (Resend). Ambos usan HttpClient tipado.
+builder.Services.Configure<FirebaseOptions>(
+    builder.Configuration.GetSection(FirebaseOptions.Seccion));
+builder.Services.AddHttpClient<FirebaseAuthService>(cliente =>
+{
+    cliente.Timeout = TimeSpan.FromSeconds(15);
+});
+
+builder.Services.AddHttpClient<IEmailSender, ResendEmailSender>(cliente =>
+{
+    cliente.Timeout = TimeSpan.FromSeconds(20);
+});
+
 // Storage de Supabase (imágenes del catálogo): options desde la
 // sección "Supabase" + HttpClient tipado para la Storage API.
 builder.Services.Configure<SupabaseStorageOptions>(

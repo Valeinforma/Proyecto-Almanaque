@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { Wrench, UserPlus, ArrowLeft } from 'lucide-react';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
+import BotonGoogle from '@/components/BotonGoogle/BotonGoogle';
 import { registrarse, haySesion } from '@/lib/auth';
 
 export default function RegistroPage() {
@@ -133,7 +134,19 @@ export default function RegistroPage() {
             Completá tus datos para registrarte en el sistema.
           </p>
 
-          <form onSubmit={alEnviar} className="mt-8 flex flex-col gap-4">
+          {/* Alta con Google: el backend crea la cuenta con rol
+              Recepcion si el email todavía no existe. */}
+          <div className="mt-8">
+            <BotonGoogle texto="Registrarse con Google" onError={setError} />
+          </div>
+
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-texto-2">o completá el formulario</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <form onSubmit={alEnviar} className="flex flex-col gap-4">
             <Input
               label="Nombre y apellido"
               type="text"

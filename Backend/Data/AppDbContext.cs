@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<Repuesto> Repuestos => Set<Repuesto>();
     public DbSet<OrdenDetalle> OrdenDetalles => Set<OrdenDetalle>();
     public DbSet<OrdenRepuestoDetalle> OrdenRepuestoDetalles => Set<OrdenRepuestoDetalle>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,26 @@ public class AppDbContext : DbContext
             entity.HasMany(o => o.DetallesRepuestos)
                 .WithOne(d => d.Orden)
                 .HasForeignKey(d => d.OrdenId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            // El login, el registro y el login con Google buscan por
+            // email. El índice único evita cuentas duplicadas si dos
+            // pedidos llegan al mismo tiempo.
+            entity.HasIndex(u => u.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            // Un token no puede repetirse (se busca por hash).
+            entity.HasIndex(t => t.TokenHash).IsUnique();
+            entity.HasIndex(t => t.UsuarioId);
+
+            entity.HasOne(t => t.Usuario)
+                .WithMany()
+                .HasForeignKey(t => t.UsuarioId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

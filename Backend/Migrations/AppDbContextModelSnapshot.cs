@@ -272,6 +272,47 @@ namespace Backend.Migrations
                     b.ToTable("ordenes_servicio");
                 });
 
+            modelBuilder.Entity("Backend.Models.PasswordResetToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creado_en");
+
+                    b.Property<DateTime>("Expira")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<bool>("Usado")
+                        .HasColumnType("boolean")
+                        .HasColumnName("usado");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("password_reset_tokens");
+                });
+
             modelBuilder.Entity("Backend.Models.Repuesto", b =>
                 {
                     b.Property<int>("Id")
@@ -392,6 +433,9 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("usuarios");
                 });
 
@@ -459,6 +503,17 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Equipo");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Backend.Models.PasswordResetToken", b =>
+                {
+                    b.HasOne("Backend.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });
