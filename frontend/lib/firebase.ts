@@ -14,13 +14,23 @@
 // nunca usa el botón de Google.
 // ============================================================
 
+// Valores por defecto del proyecto techfix-manager-4730. Firebase
+// diseña estas claves para que sean PÚBLICAS (viajan al navegador):
+// la seguridad la da la verificación del ID token en el backend.
+// Las variables NEXT_PUBLIC_* las sobrescriben si están definidas.
 const configuracion = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+    'AIzaSyCkLIWpqacMH186VMSIFd9hBuxv0cugbCM',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
+    'techfix-manager-4730.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    'techfix-manager-4730',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ||
+    '1:1083998558010:web:540f3ffbad5f603dce6203',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ||
+    '1083998558010',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+    'techfix-manager-4730.firebasestorage.app',
 };
 
 // true solo si están todas las variables mínimas. Si falta alguna,

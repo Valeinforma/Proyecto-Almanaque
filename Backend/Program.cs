@@ -77,6 +77,36 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Dejar la DB al día al arrancar. En Render no hay acceso a
+// `dotnet ef database update`, así que el propio contenedor aplica las
+// migraciones pendientes (es idempotente: si no hay nada, no hace nada).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    try
+    {
+        var pendientes = db.Database.GetPendingMigrations().ToList();
+
+        if (pendientes.Count > 0)
+        {
+            app.Logger.LogInformation(
+                "Aplicando migraciones pendientes: {Migraciones}",
+                string.Join(", ", pendientes));
+            db.Database.Migrate();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Si el usuario de la DB no tiene permisos de DDL, no tumbamos
+        // la API: el resto de los endpoints siguen funcionando y el log
+        // explica qué pasó.
+        app.Logger.LogError(
+            ex,
+            "No se pudieron aplicar las migraciones de la base de datos.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
