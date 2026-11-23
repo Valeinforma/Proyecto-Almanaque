@@ -48,7 +48,7 @@ Swagger UI disponible en `/swagger` (Development).
 - Base de datos: `techfix_db`, usuario `postgres`, password `postgres`, puerto 5432
 - Cliente psql: `D:\PostgresSQL\18\bin\psql.exe`
 - **NO tocar la base `electronicstore`**: pertenece a otro proyecto (`D:\Po\Proyecto-ale\ElectronicStore`)
-- Esquema: solo vía EF Core (`dotnet ef database update`), NO hay migraciones manuales
+- Esquema: solo vía EF Core, NO hay migraciones manuales. En local se aplican con `dotnet ef database update`; en Render el backend aplica las pendientes automáticamente al arrancar (`Program.cs`), porque no hay acceso al CLI dentro del contenedor
 - Datos: `Backend/seed.sql`, re-ejecutable (TRUNCATE + INSERT + setval de secuencias)
 
 ### Auth (sin JWT)
@@ -126,7 +126,7 @@ pnpm smoke          # smoke test de la capa de datos contra la API real
 - Local: `.env.local` sin `NEXT_PUBLIC_API_URL` → el navegador llama rutas relativas `/api/...` y el proxy de Next las reenvía a `API_URL` (por defecto `http://localhost:5137`). No hay CORS.
 - Opcional (modo directo): definir `NEXT_PUBLIC_API_URL` hace que el navegador llame al backend sin proxy; requiere CORS en el backend.
 - Producción (Render): definir `API_URL` en el servidor del frontend apuntando a la URL pública del backend, sin `/api` ni barra final.
-- **Firebase (Google)**: definir `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` y `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`. Son claves públicas (viajan al navegador). Sin ellas la app compila y el botón de Google se muestra deshabilitado. En Firebase → Authentication → Settings → Dominios autorizados hay que agregar el dominio del frontend (`localhost` ya viene; en Render, `proyecto-almanaque.onrender.com`). Valores del proyecto `techfix-manager-4730` en `frontend/.env.local` (local) y en las variables de Render (producción).
+- **Firebase (Google)**: las claves web del proyecto `techfix-manager-4730` son públicas (viajan al navegador) y están como valor por defecto en `frontend/lib/firebase.ts` y `Backend/appsettings.json`, así que Google funciona en local y en Render sin configurar nada. Se pueden sobrescribir con `NEXT_PUBLIC_FIREBASE_*` (frontend) y `Firebase__ApiKey` (backend). En Firebase → Authentication → Settings → Dominios autorizados están `localhost` y `proyecto-almanaque.onrender.com`.
 - **Backend (Google + email)**: `Firebase:ApiKey` (la misma API key web), `Email:ApiKey` (Resend), `Email:From` (remitente verificado) y `Email:FrontendUrl` (URL pública del frontend para armar el link de recuperación). En producción se pasan como variables de entorno (`Firebase__ApiKey`, `Email__ApiKey`, etc.).
 
 ### Gotchas
