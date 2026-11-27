@@ -74,29 +74,32 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // Candadito "Authorize" de Swagger UI: el sistema se autentica con
-    // el header propio X-Usuario-Id (no con JWT ni cookies). Sin esta
-    // definición, "Try it out" no podría enviar el header y todo
-    // devolvería 401 desde la UI.
-    options.AddSecurityDefinition(HeaderAuthenticationHandler.SchemeName, new OpenApiSecurityScheme
+    // Candadito "Authorize" de Swagger UI: SOLO se registra si la
+    // autenticación está activa (Auth:Habilitada=true). Con la API
+    // abierta (false) no hace falta mandar el header y el candado
+    // solo estorbaría en "Try it out".
+    if (bool.TryParse(builder.Configuration["Auth:Habilitada"], out var authHabilitada) && authHabilitada)
     {
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Name = HeaderAuthenticationHandler.UserIdHeader,
-        Description = "Id del usuario autenticado (1 = admin, 2 = técnico, 3 = recepción).",
-    });
+        options.AddSecurityDefinition(HeaderAuthenticationHandler.SchemeName, new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Header,
+            Name = HeaderAuthenticationHandler.UserIdHeader,
+            Description = "Id del usuario autenticado (1 = admin, 2 = técnico, 3 = recepción).",
+        });
 
-    // Candado en cada operación protegida del esquema. El lambda recibe
-    // el documento: la referencia al scheme solo se serializa si se le
-    // pasa el hostDocument (si no, el JSON sale "security": [{}]).
-    options.AddSecurityRequirement(document =>
-    {
-        var requisito = new OpenApiSecurityRequirement();
-        requisito.Add(
-            new OpenApiSecuritySchemeReference(HeaderAuthenticationHandler.SchemeName, document),
-            new List<string>());
-        return requisito;
-    });
+        // Candado en cada operación protegida del esquema. El lambda recibe
+        // el documento: la referencia al scheme solo se serializa si se le
+        // pasa el hostDocument (si no, el JSON sale "security": [{}]).
+        options.AddSecurityRequirement(document =>
+        {
+            var requisito = new OpenApiSecurityRequirement();
+            requisito.Add(
+                new OpenApiSecuritySchemeReference(HeaderAuthenticationHandler.SchemeName, document),
+                new List<string>());
+            return requisito;
+        });
+    }
 });
 
 var app = builder.Build();
@@ -132,8 +135,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Swagger visible también en producción (Render): la documentación
-// interactiva de la API está en /swagger. Solo expone el ESQUEMA de
-// la API; los datos siguen protegidos por el header X-Usuario-Id.
+// interactiva de la API está en /swagger. Con Auth:Habilitada=false
+// no hay candado "Authorize": la API responde sin header.
 app.UseSwagger();
 app.UseSwaggerUI();
 

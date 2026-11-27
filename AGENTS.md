@@ -30,7 +30,7 @@ Seed de datos (PostgreSQL, re-ejecutable):
 & "D:\PostgresSQL\18\bin\psql.exe" -h localhost -p 5432 -U postgres -d techfix_db -f seed.sql
 ```
 
-Swagger UI disponible en `/swagger` (Development).
+Swagger UI disponible en `/swagger` (siempre: local y producción; sin candado "Authorize" mientras `Auth:Habilitada=false`).
 
 ### Architecture
 
@@ -57,6 +57,7 @@ Swagger UI disponible en `/swagger` (Development).
 - `POST /api/auth/registro` con `{ "nombre": "...", "email": "...", "password": "..." }` (público) → crea usuario con rol **Recepcion** (el rol nunca se acepta del cliente) y devuelve el mismo shape que el login. Email repetido → 409 `{ mensaje }`
 - Peticiones protegidas: header `X-Usuario-Id: <id>`
 - El backend valida el usuario en la DB (existe y activo) y aplica **su rol desde la DB**; el rol nunca se toma del header
+- **Bandera `Auth:Habilitada`** (en `Backend/appsettings.json`, default `false`): con `false` la API queda **abierta** — cualquier petición sin header se autentica como admin (rol Admin), así todos los endpoints (lectura y escritura) responden sin sesión; con header presente se respeta el usuario real (sigue permitiendo probar roles, ej. `X-Usuario-Id: 2` → técnico). Para reactivar la seguridad: variable de entorno `Auth__Habilitada=true` en Render (o cambiar el valor en appsettings) + redeploy; el candadito "Authorize" de Swagger vuelve automáticamente al detectar la bandera en `true`.
 - Roles: `Admin`, `Tecnico`, `Recepcion`
 - Usuarios seed: `admin@techfix.com`/`admin123` (Admin), `tecnico@techfix.com`/`tecnico123` (Tecnico), `recepcion@techfix.com`/`recepcion123` (Recepcion)
 - Contraseñas: hash BCrypt (nunca texto plano en la DB)
@@ -146,7 +147,7 @@ pnpm smoke          # smoke test de la capa de datos contra la API real
 
 - **Resend MCP**: configurado en `.opencode/opencode.json` (versionable, sin secretos). El token se lee de `~/.config/opencode/resend.key` (fuera del repo, 36 bytes, sin salto de línea) mediante `{file:~/.config/opencode/resend.key}`; el process env no funciona porque OpenCode conserva el environment block con el que arrancó. Se conecta con `oauth: false` + header `Authorization: Bearer ...`. El key actual es de **solo envío**: sirve para `Email__ApiKey` del backend, pero las tools de administración (dominios, usage) devuelven `restricted_api_key`. Para enviar correos hay que pasar `from` explícitamente (ej. `TechFix <onboarding@resend.dev>`).
 - Backend: `http://localhost:5137` (HTTP)
-- Swagger **siempre activo** (local y producción): `http://localhost:5137/swagger` (local) y `https://techfix-backend-z431.onrender.com/swagger` (producción; el candadito "Authorize" pide el header `X-Usuario-Id`, ej. `1` = admin). Solo expone el esquema de la API; los datos siguen protegidos.
+- Swagger **siempre activo** (local y producción): `http://localhost:5137/swagger` (local) y `https://techfix-backend-z431.onrender.com/swagger` (producción). Con `Auth:Habilitada=false` (default) **no tiene candado "Authorize"** y "Try it out" funciona sin header; si se cambia a `true`, Swagger registra el scheme `HeaderAuth` y el candado pide el header `X-Usuario-Id` (ej. `1` = admin).
 - Frontend: `http://localhost:3000`
 - PostgreSQL: `localhost:5432`, usuario `postgres`, password `postgres`, base `techfix_db`
 - Supabase Storage: bucket público `StorageFix` (imágenes del catálogo)
