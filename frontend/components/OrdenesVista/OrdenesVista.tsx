@@ -22,7 +22,11 @@ import ErrorCarga from '@/components/ErrorCarga/ErrorCarga';
 import ListaVacia from '@/components/ListaVacia/ListaVacia';
 import ChipsEstado from '@/components/ChipsEstado/ChipsEstado';
 import type { Chip } from '@/components/ChipsEstado/ChipsEstado';
-import { useOrdenes } from '@/components/OrdenesContext/OrdenesContext';
+import {
+  useOrdenes,
+  POR_PAGINA,
+} from '@/components/OrdenesContext/OrdenesContext';
+import Paginador from '@/components/Paginador/Paginador';
 import { formatearFecha, formatearPesos } from '@/lib/formato';
 import { FLUJO_ESTADOS, ETIQUETAS_ESTADO } from '@/types/estados';
 import type { EstadoOrden } from '@/types/estados';
@@ -43,6 +47,10 @@ export default function OrdenesVista() {
     filtro,
     setFiltro,
     ordenesVisibles,
+    ordenesPaginadas,
+    pagina,
+    totalPaginas,
+    irAPagina,
     ordenAEliminar,
     setOrdenAEliminar,
     confirmarEliminacion,
@@ -103,7 +111,7 @@ export default function OrdenesVista() {
 
       {/* Tarjetas */}
       <div className="flex flex-col gap-2.5">
-        {ordenesVisibles.map((orden) => (
+        {ordenesPaginadas.map((orden) => (
           <div
             key={orden.id}
             // Toda la tarjeta abre el detalle; los botones internos
@@ -163,6 +171,15 @@ export default function OrdenesVista() {
           </div>
         ))}
       </div>
+
+      {/* Paginado visual: 8 tarjetas por página */}
+      <Paginador
+        pagina={pagina}
+        totalPaginas={totalPaginas}
+        onCambiar={irAPagina}
+        total={ordenesVisibles.length}
+        porPagina={POR_PAGINA}
+      />
 
       {/* Confirmación de borrado */}
       <Modal
