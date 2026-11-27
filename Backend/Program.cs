@@ -145,7 +145,11 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => Results.Ok(new { servicio = "API TechFix Manager", estado = "OK" }));
+// Oculto de la documentación (Swagger): es solo el health check, pero
+// aparecía como un grupo "Backend" con un solo endpoint. Sigue
+// respondiendo igual en "/" (Render y /api/salud lo usan).
+app.MapGet("/", () => Results.Ok(new { servicio = "API TechFix Manager", estado = "OK" }))
+    .ExcludeFromDescription();
 
 app.MapControllers();
 
