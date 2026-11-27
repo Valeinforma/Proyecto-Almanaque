@@ -11,7 +11,9 @@
 //   1. login correcto con el código real de lib/auth.ts
 //   2. login con password malo → ApiError 401
 //   3. GET /clientes con header X-Usuario-Id automático
-//   4. petición sin sesión → ApiError 401
+//   4. petición sin sesión → según Auth:Habilitada:
+//        · false (default, API abierta) → 200 como admin sintético
+//        · true  (API cerrada)          → ApiError 401
 // ============================================================
 
 // --- Stub de navegador ANTES de importar lib/ (se importan
@@ -61,13 +63,16 @@ async function main(): Promise<void> {
   const clientes = await api.get<Array<{ id: number }>>('/clientes');
   check('GET /clientes con header', Array.isArray(clientes) && clientes.length === 5, `n=${clientes.length}`);
 
-  // 4. Sin sesión → 401
+  // 4. Sin sesión → comporta según Auth:Habilitada (ver cabecera)
   cerrarSesion();
   try {
-    await api.get('/clientes');
-    check('GET sin sesión 401', false, 'no lanzó');
+    const sinSesion = await api.get<Array<{ id: number }>>('/clientes');
+    // API abierta (Auth:Habilitada=false): 200 con datos de admin sintético
+    check('GET sin sesión 200 (API abierta)', Array.isArray(sinSesion),
+      `n=${sinSesion.length}`);
   } catch (e) {
-    check('GET sin sesión 401', e instanceof ApiError && e.status === 401, (e as Error).message);
+    // API cerrada (Auth:Habilitada=true): debe ser 401
+    check('GET sin sesión 401 (API cerrada)', e instanceof ApiError && e.status === 401, (e as Error).message);
   }
 
   console.log(`\nRESULTADO: fallos=${fallos}`);
