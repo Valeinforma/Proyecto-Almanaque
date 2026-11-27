@@ -146,10 +146,19 @@ pnpm smoke          # smoke test de la capa de datos contra la API real
 
 - **Resend MCP**: configurado en `.opencode/opencode.json` (versionable, sin secretos). El token se lee de `~/.config/opencode/resend.key` (fuera del repo, 36 bytes, sin salto de línea) mediante `{file:~/.config/opencode/resend.key}`; el process env no funciona porque OpenCode conserva el environment block con el que arrancó. Se conecta con `oauth: false` + header `Authorization: Bearer ...`. El key actual es de **solo envío**: sirve para `Email__ApiKey` del backend, pero las tools de administración (dominios, usage) devuelven `restricted_api_key`. Para enviar correos hay que pasar `from` explícitamente (ej. `TechFix <onboarding@resend.dev>`).
 - Backend: `http://localhost:5137` (HTTP)
-- Swagger: `http://localhost:5137/swagger`
+- Swagger **siempre activo** (local y producción): `http://localhost:5137/swagger` (local) y `https://techfix-backend-z431.onrender.com/swagger` (producción; el candadito "Authorize" pide el header `X-Usuario-Id`, ej. `1` = admin). Solo expone el esquema de la API; los datos siguen protegidos.
 - Frontend: `http://localhost:3000`
 - PostgreSQL: `localhost:5432`, usuario `postgres`, password `postgres`, base `techfix_db`
 - Supabase Storage: bucket público `StorageFix` (imágenes del catálogo)
+
+### Producción (Render)
+
+- **Backend (API)**: `https://techfix-backend-z431.onrender.com` — el servicio se llama `techfix-backend`, pero el hostname real lleva el sufijo `-z431` (no estaba escrito en este repo; el único registro era el `render.yaml` de `D:\Po\Reparacioones`). **No probar `techfix-backend.onrender.com`** (sin sufijo): cuelga y no es el servicio real.
+  - Health check: `GET /` → `200 {"servicio":"API TechFix Manager","estado":"OK"}`
+  - Desde la terminal: `Invoke-WebRequest https://techfix-backend-z431.onrender.com/ -UseBasicParsing`
+- **Frontend**: `https://proyecto-almanaque.onrender.com`
+  - `GET /api/salud` → hace ping server-side a `${API_URL}/` del backend y devuelve su estado (lo usa la pantalla de Configuración).
+- Ambos servicios están en plan gratuito: se duermen tras ~15 min sin tráfico. El primer request tarda 30–60 s y puede dar **503** (despertando) o timeout → **reintentar** antes de darlos por caídos. Un hostname inexistente en Render responde **404** al instante (sirve para distinguir "no existe" de "dormido/caído").
 
 ## Build / tooling notes
 

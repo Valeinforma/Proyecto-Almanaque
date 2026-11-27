@@ -26,8 +26,11 @@ public class ArchivoController(SupabaseStorageService storage) : ControllerBase
 {
     [HttpPost("imagen")]
     [RequestSizeLimit(6 * 1024 * 1024)] // 5MB de archivo + margen de multipart
+    // IFormFile se enlaza desde el formulario por defecto (FormFileModelBinder),
+    // sin necesidad de [FromForm]. Dejarlo así además evita que Swashbuckle
+    // falle al generar el esquema de /swagger (IFormFile + [FromForm] = error).
     public async Task<IActionResult> SubirImagen(
-        [FromForm] IFormFile? archivo,
+        IFormFile? archivo,
         [FromQuery] string carpeta = "repuestos")
     {
         // ---------- carpeta + rol ----------
